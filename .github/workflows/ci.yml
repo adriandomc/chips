@@ -34,8 +34,14 @@ jobs:
         if: '!cancelled()'
         run: |
           swiftformat .
-          if ! git diff --exit-code --color=never; then
-            echo "::error::SwiftFormat would modify the listed files. Apply 'swiftformat .' locally."
+          if ! git diff --quiet; then
+            echo "## SwiftFormat diff" >> "$GITHUB_STEP_SUMMARY"
+            echo '```diff' >> "$GITHUB_STEP_SUMMARY"
+            git diff --no-color >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::SwiftFormat would modify files. See job summary for full diff."
+            git diff --no-color
+            git checkout -- .
             exit 1
           fi
       - name: clang-format check (apply + diff)
@@ -48,8 +54,14 @@ jobs:
             exit 0
           fi
           clang-format -i "${files[@]}"
-          if ! git diff --exit-code --color=never -- "${files[@]}"; then
-            echo "::error::clang-format would modify the listed files. Apply locally."
+          if ! git diff --quiet -- "${files[@]}"; then
+            echo "## clang-format diff" >> "$GITHUB_STEP_SUMMARY"
+            echo '```diff' >> "$GITHUB_STEP_SUMMARY"
+            git diff --no-color -- "${files[@]}" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::clang-format would modify files. See job summary for full diff."
+            git diff --no-color -- "${files[@]}"
+            git checkout -- "${files[@]}"
             exit 1
           fi
 
