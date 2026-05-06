@@ -1,35 +1,44 @@
-// SineGenerator.hpp — generador de sinusoide stereo. RT-safe.
+// SineGenerator.hpp — generador stereo sinusoide. Implementa IModule.
 
 #ifndef CHIPS_SINE_GENERATOR_HPP
 #define CHIPS_SINE_GENERATOR_HPP
 
+#include "IModule.hpp"
+
 #include <atomic>
+#include <cstdint>
 
 namespace chips {
 
-class SineGenerator {
+class SineGenerator : public IModule {
 public:
+    enum Param : uint32_t {
+        ParamFrequency = 0,
+        ParamEnabled = 1,
+        ParamAmplitude = 2,
+    };
+
     SineGenerator() = default;
 
-    // Llamado desde control thread, antes de comenzar audio.
-    void prepare(double sampleRate);
+    void prepare(double sampleRate, int maxFrames) override;
+    void reset() override;
+    void process(const ProcessContext& ctx) override;
+    void handleParameterChange(uint32_t paramId, float value) override;
 
-    // Cambia frecuencia de forma atómica (puede llamarse desde control thread).
+    int numAudioInputs() const override { return 0; }
+    int numAudioOutputs() const override { return 2; }
+
+    // Accesores fuera del grafo (control thread; no RT).
     void setFrequency(float hz);
-
-    // Activa/desactiva. Cuando está desactivado emite silencio (sin discontinuidad de fase).
     void setEnabled(bool enabled);
-
     bool isEnabled() const;
     float frequency() const;
-
-    // RT-safe. Escribe `frames` muestras intercaladas L,R en `out`.
-    void process(float* interleavedStereoOut, int frames);
 
 private:
     double sampleRate_ = 48000.0;
     double phase_ = 0.0;
     std::atomic<float> frequency_{440.0f};
+    std::atomic<float> amplitude_{0.25f};
     std::atomic<bool> enabled_{false};
 };
 

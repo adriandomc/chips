@@ -5,6 +5,33 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M2 — Sistema modular (en curso)
+- C++ `IModule` interface (prepare/reset/process/handleParameterChange + I/O spec).
+- `ProcessContext` con audio I/O, frames, sampleRate, tickPosition, tempo.
+- `BufferPool` pre-alocado por Plan (evita UAF si compile() corre durante render).
+- `SpscQueue<T, Capacity>` lock-free single-producer/single-consumer (cache-aligned).
+- `Graph`: addNode / removeNode / connect / disconnect / setOutputNode / compile / render.
+  - Topological sort vía Kahn's algorithm (detecta ciclos).
+  - Cada compile() construye un nuevo Plan con su propio BufferPool y se publica
+    al audio thread vía atomic pointer swap (release-acquire).
+  - Plans viejos quedan retenidos en `retainedPlans_` (M2 leak controlado;
+    GC con epoch reclamation queda para M2.5/M3).
+- Refactor de `SineGenerator` para implementar `IModule` (params: frequency,
+  enabled, amplitude). Atómicos relaxed se mantienen para acceso desde control
+  thread fuera del SPSC.
+- Nuevos módulos `PassthroughModule` (1+ canal) y `TestSourceModule` (ramp
+  determinística), usados por tests offline.
+- C ABI nueva: `chips_engine_add_node`, `remove_node`, `connect`, `disconnect`,
+  `set_output_node`, `compile`, `set_parameter`. Constants `CHIPS_NODE_TYPE_*`.
+  Eliminados los `chips_engine_set_sine_*` legacy de M1.
+- Swift facade actualizada con `ChipsNodeType` enum y métodos del grafo. Helper
+  `setParameter(_:sine:value:)` para usar `SineParam` tipado.
+- Tests offline: silencio sin grafo, sine -> output, compile sin output node
+  falla, ciclo detectado, 50 passthroughs en cadena producen RMS idéntico al
+  source directo, removeNode + recompile.
+- App: `RootViewController` actualizado para construir el grafo (sine -> output,
+  compile) antes de start.
+
 ### M1 — Motor de audio (en curso)
 - C++ `SineGenerator` (RT-safe, atómicos) en `ChipsEngineCxx`.
 - C++ `DspLoadTracker` con EMA suavizado.
