@@ -1,0 +1,28 @@
+# Fastfile — placeholder M0.
+# Las lanes reales (TestFlight, App Store) se configuran en milestones posteriores
+# cuando exista cuenta de Apple Developer activa y match instalado.
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Run unit tests on iOS Simulator"
+  lane :test do
+    sh("xcodegen generate -p ..")
+    run_tests(
+      project: "../Chips.xcodeproj",
+      scheme: "Chips",
+      device: "iPhone 16",
+      code_coverage: true
+    )
+  end
+
+  desc "Build a TestFlight beta (placeholder; configurar match + appstore connect API key)"
+  lane :beta do
+    UI.user_error!("TestFlight no está configurado todavía. Pendiente de M11.")
+  end
+
+  desc "Submit to App Store (placeholder)"
+  lane :release do
+    UI.user_error!("App Store submission no está configurado todavía. Pendiente de M11.")
+  end
+end

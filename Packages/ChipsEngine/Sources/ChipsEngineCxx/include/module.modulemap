@@ -1,0 +1,5 @@
+module ChipsEngineCxx {
+    umbrella header "ChipsEngine/ChipsEngine.h"
+    export *
+    link "ChipsEngineCxx"
+}

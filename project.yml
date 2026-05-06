@@ -1,0 +1,93 @@
+name: Chips
+
+options:
+  bundleIdPrefix: com.adriandomc
+  deploymentTarget:
+    iOS: "17.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+  groupSortPosition: top
+  defaultConfig: Debug
+
+configs:
+  Debug: debug
+  Release: release
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: true
+    ENABLE_MODULE_VERIFIER: true
+    CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+    CLANG_ENABLE_MODULES: true
+    CLANG_WARN_DOCUMENTATION_COMMENTS: true
+    GCC_TREAT_WARNINGS_AS_ERRORS: false
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: false
+    MARKETING_VERSION: "0.0.1"
+    CURRENT_PROJECT_VERSION: 1
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+
+packages:
+  ChipsCore:
+    path: Packages/ChipsCore
+  ChipsEngine:
+    path: Packages/ChipsEngine
+  ChipsAudioHost:
+    path: Packages/ChipsAudioHost
+  ChipsMIDI:
+    path: Packages/ChipsMIDI
+  ChipsUIKit:
+    path: Packages/ChipsUIKit
+  ChipsModules:
+    path: Packages/ChipsModules
+
+targets:
+  Chips:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Chips
+    info:
+      path: Chips/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adriandomc.chips
+        PRODUCT_NAME: Chips
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: false
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: false
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_CFBundleDisplayName: Chips
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+    dependencies:
+      - package: ChipsCore
+      - package: ChipsEngine
+      - package: ChipsAudioHost
+      - package: ChipsMIDI
+      - package: ChipsUIKit
+      - package: ChipsModules
+    scheme:
+      testTargets:
+        - ChipsTests
+      gatherCoverageData: true
+      coverageTargets:
+        - Chips
+
+  ChipsTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: ChipsTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.adriandomc.chips.tests
+        BUNDLE_LOADER: $(TEST_HOST)
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Chips.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Chips
+    dependencies:
+      - target: Chips

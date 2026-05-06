@@ -1,0 +1,61 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# XcodeGen output (generated locally — regenerate via `xcodegen generate`)
+Chips.xcodeproj/
+Chips.xcworkspace/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+Packages/*/.build/
+Packages/*/.swiftpm/
+
+# CocoaPods (no se usa, por si algún día)
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+fastlane/.env
+fastlane/.env.*
+
+# Code signing
+*.mobileprovision
+*.p12
+*.cer
+*.certSigningRequest
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Misc
+*.log
+node_modules/

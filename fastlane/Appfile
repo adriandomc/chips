@@ -1,0 +1,4 @@
+app_identifier("com.adriandomc.chips")
+# apple_id("...")        # set when Apple Developer account is active
+# itc_team_id("...")     # set when configuring App Store Connect
+# team_id("...")         # set when configuring code signing
