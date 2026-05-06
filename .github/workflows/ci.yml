@@ -7,6 +7,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  pull-requests: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,20 +36,32 @@ jobs:
         run: swiftlint --strict --reporter github-actions-logging
       - name: SwiftFormat (apply + diff)
         if: '!cancelled()'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           swiftformat .
           if ! git diff --quiet; then
-            echo "## SwiftFormat diff" >> "$GITHUB_STEP_SUMMARY"
-            echo '```diff' >> "$GITHUB_STEP_SUMMARY"
-            git diff --no-color >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::SwiftFormat would modify files. See job summary for full diff."
-            git diff --no-color
+            git diff --no-color > /tmp/swiftformat.diff
+            echo "::error::SwiftFormat would modify files."
+            cat /tmp/swiftformat.diff
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## SwiftFormat would change these files"
+                echo '```diff'
+                cat /tmp/swiftformat.diff
+                echo '```'
+              } > /tmp/swiftformat-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/swiftformat-comment.md || true
+            fi
             git checkout -- .
             exit 1
           fi
       - name: clang-format check (apply + diff)
         if: '!cancelled()'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           shopt -s globstar nullglob
           files=( Packages/**/*.{c,cc,cpp,h,hpp,m,mm} )
@@ -55,12 +71,18 @@ jobs:
           fi
           clang-format -i "${files[@]}"
           if ! git diff --quiet -- "${files[@]}"; then
-            echo "## clang-format diff" >> "$GITHUB_STEP_SUMMARY"
-            echo '```diff' >> "$GITHUB_STEP_SUMMARY"
-            git diff --no-color -- "${files[@]}" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-            echo "::error::clang-format would modify files. See job summary for full diff."
-            git diff --no-color -- "${files[@]}"
+            git diff --no-color -- "${files[@]}" > /tmp/clangformat.diff
+            echo "::error::clang-format would modify files."
+            cat /tmp/clangformat.diff
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## clang-format would change these files"
+                echo '```diff'
+                cat /tmp/clangformat.diff
+                echo '```'
+              } > /tmp/clangformat-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/clangformat-comment.md || true
+            fi
             git checkout -- "${files[@]}"
             exit 1
           fi
