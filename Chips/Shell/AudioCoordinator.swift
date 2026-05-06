@@ -38,8 +38,8 @@ final class AudioCoordinator {
 
     // MARK: Synth control
 
-    func setVolume(_ v: Float) {
-        host.engine.setParameter(synthNodeId, additive: .volume, value: v)
+    func setVolume(_ value: Float) {
+        host.engine.setParameter(synthNodeId, additive: .volume, value: value)
     }
 
     func setAttack(_ seconds: Float) {
