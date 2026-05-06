@@ -48,10 +48,17 @@ public final class ChipsEngine: @unchecked Sendable {
         chips_engine_render(handle, buffer, Int32(frames))
     }
 
-    public var sampleRate: Double { chips_engine_sample_rate(handle) }
-    public var dspLoad: Float { chips_engine_dsp_load(handle) }
+    public var sampleRate: Double {
+        chips_engine_sample_rate(handle)
+    }
 
-    public static var version: String { String(cString: chips_engine_version()) }
+    public var dspLoad: Float {
+        chips_engine_dsp_load(handle)
+    }
+
+    public static var version: String {
+        String(cString: chips_engine_version())
+    }
 
     // MARK: Grafo
 

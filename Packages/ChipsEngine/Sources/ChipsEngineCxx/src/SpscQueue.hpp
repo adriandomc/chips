@@ -10,8 +10,7 @@
 
 namespace chips {
 
-template <typename T, size_t Capacity>
-class SpscQueue {
+template <typename T, size_t Capacity> class SpscQueue {
     static_assert((Capacity & (Capacity - 1)) == 0, "Capacity must be power of two");
 
 public:
@@ -38,9 +37,7 @@ public:
         return true;
     }
 
-    bool empty() const {
-        return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire);
-    }
+    bool empty() const { return head_.load(std::memory_order_acquire) == tail_.load(std::memory_order_acquire); }
 
 private:
     static constexpr size_t kMask = Capacity - 1;

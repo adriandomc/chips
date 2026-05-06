@@ -18,7 +18,7 @@ typedef uint32_t ChipsNodeId;
 #define CHIPS_INVALID_NODE_ID ((ChipsNodeId)0)
 
 // Identificadores de tipo de nodo (estables).
-#define CHIPS_NODE_TYPE_SINE        "sine"
+#define CHIPS_NODE_TYPE_SINE "sine"
 #define CHIPS_NODE_TYPE_PASSTHROUGH "passthrough"
 #define CHIPS_NODE_TYPE_TEST_SOURCE "test_source"
 
@@ -46,13 +46,9 @@ ChipsNodeId chips_engine_add_node(ChipsEngineHandle* engine, const char* type_id
 bool chips_engine_remove_node(ChipsEngineHandle* engine, ChipsNodeId node);
 
 /// Conecta src.outPort -> dst.inPort. Un input solo puede tener un origen.
-bool chips_engine_connect(ChipsEngineHandle* engine,
-                          ChipsNodeId src, int src_port,
-                          ChipsNodeId dst, int dst_port);
+bool chips_engine_connect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port);
 
-bool chips_engine_disconnect(ChipsEngineHandle* engine,
-                             ChipsNodeId src, int src_port,
-                             ChipsNodeId dst, int dst_port);
+bool chips_engine_disconnect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port);
 
 /// Define el nodo cuya salida (puertos 0,1) se enviará al output del engine.
 void chips_engine_set_output_node(ChipsEngineHandle* engine, ChipsNodeId node);
@@ -63,10 +59,7 @@ bool chips_engine_compile(ChipsEngineHandle* engine);
 
 /// Encola un cambio de parámetro (RT-safe vía SPSC). Devuelve false si la cola
 /// está llena. El cambio se aplica antes del próximo render block.
-bool chips_engine_set_parameter(ChipsEngineHandle* engine,
-                                ChipsNodeId node,
-                                uint32_t param_id,
-                                float value);
+bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value);
 
 #ifdef __cplusplus
 }

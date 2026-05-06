@@ -11,13 +11,13 @@ namespace chips {
 /// Contexto de proceso pasado a IModule::process. Las pointers son válidas
 /// solo durante la llamada y apuntan a buffers dentro del BufferPool del Graph.
 struct ProcessContext {
-    const float* const* audioIn;     // [numAudioIn][frames]
-    float* const* audioOut;          // [numAudioOut][frames]
+    const float* const* audioIn;  // [numAudioIn][frames]
+    float* const* audioOut;       // [numAudioOut][frames]
     int numAudioIn;
     int numAudioOut;
     int frames;
     double sampleRate;
-    int64_t tickPosition;            // PPQ ticks desde el inicio del transport
+    int64_t tickPosition;  // PPQ ticks desde el inicio del transport
     double tempoBpm;
 };
 

@@ -27,9 +27,15 @@ void SineGenerator::setFrequency(float hz) {
     frequency_.store(hz, std::memory_order_relaxed);
 }
 
-void SineGenerator::setEnabled(bool enabled) { enabled_.store(enabled, std::memory_order_relaxed); }
-bool SineGenerator::isEnabled() const { return enabled_.load(std::memory_order_relaxed); }
-float SineGenerator::frequency() const { return frequency_.load(std::memory_order_relaxed); }
+void SineGenerator::setEnabled(bool enabled) {
+    enabled_.store(enabled, std::memory_order_relaxed);
+}
+bool SineGenerator::isEnabled() const {
+    return enabled_.load(std::memory_order_relaxed);
+}
+float SineGenerator::frequency() const {
+    return frequency_.load(std::memory_order_relaxed);
+}
 
 void SineGenerator::handleParameterChange(uint32_t paramId, float value) {
     switch (paramId) {

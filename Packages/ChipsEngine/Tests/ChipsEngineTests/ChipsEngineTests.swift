@@ -139,6 +139,6 @@ final class ChipsEngineTests: XCTestCase {
         engine.setOutputNode(sine)
         XCTAssertTrue(engine.compile())
         XCTAssertTrue(engine.removeNode(sine))
-        XCTAssertFalse(engine.compile())  // ya no hay output node
+        XCTAssertFalse(engine.compile()) // ya no hay output node
     }
 }

@@ -79,16 +79,16 @@ private:
 
     struct PlannedNode {
         IModule* module;
-        std::vector<const float*> inputs;   // pointers a buffers del pool (o nullptr para silencio)
-        std::vector<float*> outputs;        // pointers a buffers del pool
+        std::vector<const float*> inputs;  // pointers a buffers del pool (o nullptr para silencio)
+        std::vector<float*> outputs;       // pointers a buffers del pool
         int numInputs;
         int numOutputs;
     };
 
     struct Plan {
-        BufferPool bufferPool;              // pool propio del plan; evita UAF al recompilar
+        BufferPool bufferPool;  // pool propio del plan; evita UAF al recompilar
         std::vector<PlannedNode> nodes;
-        const float* outputL = nullptr;     // buffer del pool que será L del engine
+        const float* outputL = nullptr;  // buffer del pool que será L del engine
         const float* outputR = nullptr;
     };
 

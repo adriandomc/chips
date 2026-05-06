@@ -57,9 +57,13 @@ ChipsEngineHandle* chips_engine_create(double sample_rate, int max_frames) {
     return engine;
 }
 
-void chips_engine_destroy(ChipsEngineHandle* engine) { delete engine; }
+void chips_engine_destroy(ChipsEngineHandle* engine) {
+    delete engine;
+}
 
-const char* chips_engine_version(void) { return kVersion; }
+const char* chips_engine_version(void) {
+    return kVersion;
+}
 
 void chips_engine_render(ChipsEngineHandle* engine, float* interleaved_stereo_out, int frames) {
     if (engine == nullptr || interleaved_stereo_out == nullptr || frames <= 0) {
@@ -102,18 +106,14 @@ bool chips_engine_remove_node(ChipsEngineHandle* engine, ChipsNodeId node) {
     return engine->graph.removeNode(node);
 }
 
-bool chips_engine_connect(ChipsEngineHandle* engine,
-                          ChipsNodeId src, int src_port,
-                          ChipsNodeId dst, int dst_port) {
+bool chips_engine_connect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port) {
     if (engine == nullptr) {
         return false;
     }
     return engine->graph.connect(src, src_port, dst, dst_port);
 }
 
-bool chips_engine_disconnect(ChipsEngineHandle* engine,
-                             ChipsNodeId src, int src_port,
-                             ChipsNodeId dst, int dst_port) {
+bool chips_engine_disconnect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port) {
     if (engine == nullptr) {
         return false;
     }
@@ -134,10 +134,7 @@ bool chips_engine_compile(ChipsEngineHandle* engine) {
     return engine->graph.compile();
 }
 
-bool chips_engine_set_parameter(ChipsEngineHandle* engine,
-                                ChipsNodeId node,
-                                uint32_t param_id,
-                                float value) {
+bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value) {
     if (engine == nullptr) {
         return false;
     }

@@ -39,10 +39,9 @@ bool Graph::removeNode(NodeId id) {
     if (it == nodes_.end()) {
         return false;
     }
-    connections_.erase(
-        std::remove_if(connections_.begin(), connections_.end(),
-                       [id](const Connection& c) { return c.src == id || c.dst == id; }),
-        connections_.end());
+    connections_.erase(std::remove_if(connections_.begin(), connections_.end(),
+                                      [id](const Connection& c) { return c.src == id || c.dst == id; }),
+                       connections_.end());
     if (outputNodeId_ == id) {
         outputNodeId_ = kInvalidNodeId;
     }
@@ -72,10 +71,9 @@ bool Graph::connect(NodeId src, int srcPort, NodeId dst, int dstPort) {
 }
 
 bool Graph::disconnect(NodeId src, int srcPort, NodeId dst, int dstPort) {
-    auto it = std::find_if(connections_.begin(), connections_.end(),
-                           [&](const Connection& c) {
-                               return c.src == src && c.srcPort == srcPort && c.dst == dst && c.dstPort == dstPort;
-                           });
+    auto it = std::find_if(connections_.begin(), connections_.end(), [&](const Connection& c) {
+        return c.src == src && c.srcPort == srcPort && c.dst == dst && c.dstPort == dstPort;
+    });
     if (it == connections_.end()) {
         return false;
     }
@@ -83,7 +81,9 @@ bool Graph::disconnect(NodeId src, int srcPort, NodeId dst, int dstPort) {
     return true;
 }
 
-void Graph::setOutputNode(NodeId id) { outputNodeId_ = id; }
+void Graph::setOutputNode(NodeId id) {
+    outputNodeId_ = id;
+}
 
 Graph::Node* Graph::findNode(NodeId id) {
     auto it = std::find_if(nodes_.begin(), nodes_.end(), [id](const Node& n) { return n.id == id; });
@@ -202,7 +202,8 @@ bool Graph::compile() {
         return false;
     }
     plan->outputL = plan->bufferPool.buffer(outputBufferIndex[key(outputNodeId_, 0)]);
-    plan->outputR = outChannels >= 2 ? plan->bufferPool.buffer(outputBufferIndex[key(outputNodeId_, 1)]) : plan->outputL;
+    plan->outputR =
+        outChannels >= 2 ? plan->bufferPool.buffer(outputBufferIndex[key(outputNodeId_, 1)]) : plan->outputL;
 
     // 5. Publish atómico. El plan viejo queda retenido (cleanup en compile siguiente).
     Plan* raw = plan.release();
