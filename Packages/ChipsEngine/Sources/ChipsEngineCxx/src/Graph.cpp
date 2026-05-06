@@ -96,7 +96,16 @@ IModule* Graph::node(NodeId id) {
 }
 
 bool Graph::postParameter(NodeId nodeId, uint32_t paramId, float value) {
-    return paramQueue_.push(ParameterEvent{nodeId, paramId, value});
+    return paramQueue_.push(ParameterEvent{ParameterEvent::Kind::Param, nodeId, paramId, value});
+}
+
+bool Graph::postNoteOn(NodeId nodeId, int midi, float velocity) {
+    return paramQueue_.push(
+        ParameterEvent{ParameterEvent::Kind::NoteOn, nodeId, static_cast<uint32_t>(midi), velocity});
+}
+
+bool Graph::postNoteOff(NodeId nodeId, int midi) {
+    return paramQueue_.push(ParameterEvent{ParameterEvent::Kind::NoteOff, nodeId, static_cast<uint32_t>(midi), 0.0f});
 }
 
 bool Graph::compile() {
@@ -224,13 +233,23 @@ void Graph::render(float* interleavedStereoOut, int frames) {
         return;
     }
 
-    // Drain de eventos paramétricos. M2 hace broadcast (los módulos ignoran lo
-    // que no entienden); M2.5 introducirá dispatch indexado por nodeId.
+    // Drain de eventos. M2/M4 broadcast: cada módulo recibe todos los eventos
+    // y filtra por paramId/midi. M2.5 introducirá dispatch indexado por nodeId.
     {
         ParameterEvent ev;
         while (paramQueue_.pop(ev)) {
             for (auto& pn : plan->nodes) {
-                pn.module->handleParameterChange(ev.paramId, ev.value);
+                switch (ev.kind) {
+                case ParameterEvent::Kind::Param:
+                    pn.module->handleParameterChange(ev.paramOrMidi, ev.value);
+                    break;
+                case ParameterEvent::Kind::NoteOn:
+                    pn.module->handleNoteOn(static_cast<int>(ev.paramOrMidi), ev.value);
+                    break;
+                case ParameterEvent::Kind::NoteOff:
+                    pn.module->handleNoteOff(static_cast<int>(ev.paramOrMidi));
+                    break;
+                }
             }
         }
     }

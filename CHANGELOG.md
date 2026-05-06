@@ -5,6 +5,34 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M4 — AdditiveSynth (en curso)
+- C++ `AdsrEnvelope` lineal (header-only, RT-safe) con stages
+  Idle/Attack/Decay/Sustain/Release.
+- C++ `AdditiveSynth` polifónico: 8 voces × 16 partials. Cada voz tiene
+  su propio envelope ADSR; las amplitudes de los partials son compartidas
+  y se computan desde el parámetro `tilt` (0 = solo fundamental,
+  1 = serie tipo saw 1/n normalizada). Voice stealing por round-robin.
+- Extensión de `IModule`: `handleNoteOn(midi, velocity)` y `handleNoteOff(midi)`
+  con default no-op (los efectos los ignoran).
+- Extensión del SPSC del Graph: `ParameterEvent::Kind` discrimina entre
+  `Param`, `NoteOn`, `NoteOff`. El drain en render() los dispatcha al
+  módulo correspondiente.
+- C ABI: `chips_engine_send_note_on` / `_off`. Tipo `additive_synth`
+  registrado en `makeModuleFromTypeId`.
+- Swift facade: `ChipsNodeType.additiveSynth`, `AdditiveSynthParam` enum
+  (volume/attack/decay/sustain/release/tilt), `sendNoteOn` / `sendNoteOff`,
+  `setParameter(_:additive:value:)`.
+- `AudioCoordinator` reemplaza el sine generator por el AdditiveSynth.
+  Defaults musicales: volume 0.5, A 10ms, D 150ms, S 0.7, R 400ms, tilt 0.5.
+- `SynthesizerSectionViewController` cablea Volume + ADSR + tilt
+  (mapeado al knob TUNE) al synth real. El teclado piano dispara
+  `noteOn`/`noteOff` directos en el coordinator (la frecuencia ya no se
+  setea desde Swift — el synth la calcula desde MIDI).
+- Tests offline:
+  - synth silencioso por defecto (sin notas).
+  - sound after note on, RMS > 0.05 tras 4 bloques.
+  - silence tras note off y release completo.
+
 ### M3 — Framework UI custom (en curso)
 - `ChipsTheme` con paleta del mockup: top bar lavender, sidebar gris,
   paleta pastel de pistas (10 colores), accent cyan, transport green/red,

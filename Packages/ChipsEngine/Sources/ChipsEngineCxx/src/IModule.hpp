@@ -39,6 +39,11 @@ public:
     /// La implementación NO debe alocar ni bloquear.
     virtual void handleParameterChange(uint32_t paramId, float value) = 0;
 
+    /// Eventos de nota. Default no-op (efectos los ignoran). Llamados desde el
+    /// audio thread igual que handleParameterChange.
+    virtual void handleNoteOn(int /*midi*/, float /*velocity*/) {}
+    virtual void handleNoteOff(int /*midi*/) {}
+
     /// Especificación de I/O. Estable durante la vida del módulo.
     virtual int numAudioInputs() const = 0;
     virtual int numAudioOutputs() const = 0;

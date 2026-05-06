@@ -21,6 +21,7 @@ typedef uint32_t ChipsNodeId;
 #define CHIPS_NODE_TYPE_SINE "sine"
 #define CHIPS_NODE_TYPE_PASSTHROUGH "passthrough"
 #define CHIPS_NODE_TYPE_TEST_SOURCE "test_source"
+#define CHIPS_NODE_TYPE_ADDITIVE_SYNTH "additive_synth"
 
 // ---- Engine lifecycle ----
 
@@ -60,6 +61,12 @@ bool chips_engine_compile(ChipsEngineHandle* engine);
 /// Encola un cambio de parámetro (RT-safe vía SPSC). Devuelve false si la cola
 /// está llena. El cambio se aplica antes del próximo render block.
 bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value);
+
+/// Envía un Note On al nodo (instrumento). velocity en [0..1].
+bool chips_engine_send_note_on(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity);
+
+/// Envía un Note Off al nodo.
+bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int midi);
 
 #ifdef __cplusplus
 }

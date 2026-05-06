@@ -130,6 +130,86 @@ final class ChipsEngineTests: XCTestCase {
         }
     }
 
+    func testAdditiveSynthSilentByDefault() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.setOutputNode(synth)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 0.5)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        engine.render(into: buffer, frames: frames)
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        XCTAssertEqual((sumSquares / Double(frames * 2)).squareRoot(), 0.0, accuracy: 1.0e-5)
+    }
+
+    func testAdditiveSynthProducesSoundAfterNoteOn() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.setOutputNode(synth)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 0.8)
+        engine.setParameter(synth, additive: .attack, value: 0.001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+        engine.setParameter(synth, additive: .tilt, value: 0.5)
+        XCTAssertTrue(engine.sendNoteOn(synth, midi: 69, velocity: 1.0))
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        // Renderizamos varios bloques para que el envelope llegue a sustain.
+        for _ in 0 ..< 4 {
+            engine.render(into: buffer, frames: frames)
+        }
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        let rms = (sumSquares / Double(frames * 2)).squareRoot()
+        XCTAssertGreaterThan(rms, 0.05)
+    }
+
+    func testAdditiveSynthSilentAfterNoteOffAndRelease() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.setOutputNode(synth)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 0.8)
+        engine.setParameter(synth, additive: .attack, value: 0.001)
+        engine.setParameter(synth, additive: .release, value: 0.01)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+
+        engine.sendNoteOn(synth, midi: 69, velocity: 1.0)
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        for _ in 0 ..< 4 {
+            engine.render(into: buffer, frames: frames)
+        }
+        engine.sendNoteOff(synth, midi: 69)
+        // Release de 10 ms = 480 samples; renderizar 4096 frames es más que suficiente.
+        for _ in 0 ..< 16 {
+            engine.render(into: buffer, frames: frames)
+        }
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        let rms = (sumSquares / Double(frames * 2)).squareRoot()
+        XCTAssertLessThan(rms, 0.001)
+    }
+
     func testRemoveAndRebuildGraph() throws {
         let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
         guard let sine = engine.addNode(.sine) else {

@@ -5,7 +5,7 @@ final class ChipsAppTests: XCTestCase {
     @MainActor
     func testAudioCoordinatorInitializes() throws {
         let coord = try AudioCoordinator()
-        XCTAssertNotEqual(coord.sineNodeId, 0)
+        XCTAssertNotEqual(coord.synthNodeId, 0)
     }
 
     @MainActor
