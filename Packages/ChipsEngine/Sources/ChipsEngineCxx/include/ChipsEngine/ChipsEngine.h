@@ -28,6 +28,26 @@ void chips_engine_render(ChipsEngineHandle* engine, float* interleaved_stereo_ou
 /// Versión del motor como cadena C-string estática.
 const char* chips_engine_version(void);
 
+// ---- Sine generator (módulo de prueba para M1) ----
+
+/// Establece la frecuencia del generador sinusoidal interno (Hz).
+/// Llamable desde cualquier thread; aplicado en el siguiente buffer.
+void chips_engine_set_sine_frequency(ChipsEngineHandle* engine, float hz);
+
+/// Activa o desactiva el generador sinusoidal. Desactivado = silencio.
+void chips_engine_set_sine_enabled(ChipsEngineHandle* engine, bool enabled);
+
+/// Devuelve true si el generador sinusoidal está activo.
+bool chips_engine_is_sine_enabled(const ChipsEngineHandle* engine);
+
+// ---- Métricas ----
+
+/// Carga DSP (0.0 = idle, 1.0 = saturado). Suavizada por EMA.
+float chips_engine_dsp_load(const ChipsEngineHandle* engine);
+
+/// Sample rate efectivo configurado en el motor.
+double chips_engine_sample_rate(const ChipsEngineHandle* engine);
+
 #ifdef __cplusplus
 }
 #endif
