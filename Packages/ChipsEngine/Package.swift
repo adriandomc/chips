@@ -30,7 +30,6 @@ let package = Package(
             path: "Sources/ChipsEngine",
             swiftSettings: [
                 .swiftLanguageMode(.v6),
-                .enableUpcomingFeature("StrictConcurrency"),
                 .enableUpcomingFeature("ExistentialAny"),
             ]
         ),

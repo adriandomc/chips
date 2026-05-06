@@ -19,7 +19,6 @@ let package = Package(
             path: "Sources/ChipsAudioHost",
             swiftSettings: [
                 .swiftLanguageMode(.v6),
-                .enableUpcomingFeature("StrictConcurrency"),
                 .enableUpcomingFeature("ExistentialAny"),
             ]
         ),

@@ -13,7 +13,6 @@ let package = Package(
             path: "Sources/ChipsUIKit",
             swiftSettings: [
                 .swiftLanguageMode(.v6),
-                .enableUpcomingFeature("StrictConcurrency"),
                 .enableUpcomingFeature("ExistentialAny"),
             ]
         ),

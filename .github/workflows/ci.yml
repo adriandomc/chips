@@ -122,19 +122,47 @@ jobs:
             -scheme Chips
 
       - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -o pipefail
+          set +e
           xcodebuild build \
             -project Chips.xcodeproj \
             -scheme Chips \
             -destination "$DESTINATION" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify --renderer github-actions
+            2>&1 | tee /tmp/build.log | xcbeautify --renderer github-actions
+          EXIT=${PIPESTATUS[0]}
+          if [ "$EXIT" -ne 0 ]; then
+            echo "::error::xcodebuild build failed (exit $EXIT)."
+            grep -E "error:|warning:|FAILED|fatal error" /tmp/build.log | head -100 || true
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## Build failed (exit $EXIT)"
+                echo '```'
+                grep -B1 -A3 -E "error:|FAILED|fatal error" /tmp/build.log | head -200
+                echo '```'
+                echo ""
+                echo "<details><summary>Last 200 lines of build log</summary>"
+                echo ""
+                echo '```'
+                tail -200 /tmp/build.log
+                echo '```'
+                echo "</details>"
+              } > /tmp/build-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/build-comment.md || true
+            fi
+            exit "$EXIT"
+          fi
 
       - name: Test (app target)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          set -o pipefail
+          set +e
           xcodebuild test \
             -project Chips.xcodeproj \
             -scheme Chips \
@@ -142,7 +170,22 @@ jobs:
             -configuration Debug \
             -enableCodeCoverage YES \
             CODE_SIGNING_ALLOWED=NO \
-            | xcbeautify --renderer github-actions
+            2>&1 | tee /tmp/test.log | xcbeautify --renderer github-actions
+          EXIT=${PIPESTATUS[0]}
+          if [ "$EXIT" -ne 0 ]; then
+            echo "::error::xcodebuild test failed (exit $EXIT)."
+            grep -E "error:|FAILED|fatal error" /tmp/test.log | head -100 || true
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## Tests failed (exit $EXIT)"
+                echo '```'
+                grep -B1 -A3 -E "error:|FAILED|fatal error" /tmp/test.log | head -200
+                echo '```'
+              } > /tmp/test-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/test-comment.md || true
+            fi
+            exit "$EXIT"
+          fi
 
       - name: Test Swift Packages (standalone)
         run: |
