@@ -14,17 +14,17 @@ public final class ChipsEngine {
         guard let raw = chips_engine_create(sampleRate, Int32(maxFrames)) else {
             throw ChipsEngineError.creationFailed
         }
-        handle = OpaquePointer(raw)
+        handle = raw
     }
 
     deinit {
-        chips_engine_destroy(UnsafeMutablePointer(handle))
+        chips_engine_destroy(handle)
     }
 
     /// Renderiza `frames` muestras en el buffer stereo intercalado.
     /// - Important: solo debe invocarse desde el audio thread (render callback).
     public func render(into buffer: UnsafeMutablePointer<Float>, frames: Int) {
-        chips_engine_render(UnsafeMutablePointer(handle), buffer, Int32(frames))
+        chips_engine_render(handle, buffer, Int32(frames))
     }
 
     public static var version: String {
