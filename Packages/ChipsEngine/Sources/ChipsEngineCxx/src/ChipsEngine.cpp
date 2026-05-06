@@ -12,7 +12,7 @@ constexpr const char* kVersion = "0.0.1-m0";
 
 struct ChipsEngineHandle {
     double sampleRate;
-    int    maxFrames;
+    int maxFrames;
 };
 
 extern "C" {
@@ -21,12 +21,12 @@ ChipsEngineHandle* chips_engine_create(double sample_rate, int max_frames) {
     if (sample_rate <= 0.0 || max_frames <= 0) {
         return nullptr;
     }
-    auto* engine     = static_cast<ChipsEngineHandle*>(std::malloc(sizeof(ChipsEngineHandle)));
+    auto* engine = static_cast<ChipsEngineHandle*>(std::malloc(sizeof(ChipsEngineHandle)));
     if (engine == nullptr) {
         return nullptr;
     }
     engine->sampleRate = sample_rate;
-    engine->maxFrames  = max_frames;
+    engine->maxFrames = max_frames;
     return engine;
 }
 

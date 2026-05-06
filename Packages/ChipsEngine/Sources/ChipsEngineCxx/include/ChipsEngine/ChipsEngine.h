@@ -23,11 +23,7 @@ void chips_engine_destroy(ChipsEngineHandle* engine);
 
 /// Renderiza `frames` muestras en el buffer de salida intercalado stereo (L,R,L,R,...).
 /// Debe llamarse desde el audio thread. RT-safe.
-void chips_engine_render(
-    ChipsEngineHandle* engine,
-    float* interleaved_stereo_out,
-    int frames
-);
+void chips_engine_render(ChipsEngineHandle* engine, float* interleaved_stereo_out, int frames);
 
 /// Versión del motor como cadena C-string estática.
 const char* chips_engine_version(void);

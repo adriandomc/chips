@@ -14,7 +14,7 @@ public final class ChipsEngine {
         guard let raw = chips_engine_create(sampleRate, Int32(maxFrames)) else {
             throw ChipsEngineError.creationFailed
         }
-        self.handle = OpaquePointer(raw)
+        handle = OpaquePointer(raw)
     }
 
     deinit {
