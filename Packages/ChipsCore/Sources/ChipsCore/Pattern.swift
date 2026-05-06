@@ -22,7 +22,9 @@ public struct PatternNote: Hashable, Codable, Sendable {
         self.velocity = max(0, min(1, velocity))
     }
 
-    public var endTick: Int64 { startTick + lengthTicks }
+    public var endTick: Int64 {
+        startTick + lengthTicks
+    }
 }
 
 /// Un pattern es una secuencia de notas con longitud total fija.

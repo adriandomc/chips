@@ -78,8 +78,14 @@ final class ChipsCoreTests: XCTestCase {
         final class Spy: SequencerEngineDelegate {
             var noteOnCount = 0
             var noteOffCount = 0
-            func sequencer(noteOnFor _: Track, note _: PatternNote) { noteOnCount += 1 }
-            func sequencer(noteOffFor _: Track, note _: PatternNote) { noteOffCount += 1 }
+            func sequencer(noteOnFor _: Track, note _: PatternNote) {
+                noteOnCount += 1
+            }
+
+            func sequencer(noteOffFor _: Track, note _: PatternNote) {
+                noteOffCount += 1
+            }
+
             func sequencer(positionDidChange _: Int64) {}
         }
         let spy = Spy()

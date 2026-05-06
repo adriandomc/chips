@@ -13,8 +13,8 @@ public protocol SequencerEngineDelegate: AnyObject {
 /// migrar el scheduling al audio thread vía SPSC.
 @MainActor
 public final class SequencerEngine {
-    private(set) public var transport = TransportState()
-    private(set) public var tracks: [Track] = []
+    public private(set) var transport = TransportState()
+    public private(set) var tracks: [Track] = []
 
     public weak var delegate: (any SequencerEngineDelegate)?
 

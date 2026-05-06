@@ -10,7 +10,7 @@ final class GridSectionViewController: UIViewController {
     private let ticksPerStep: Int64
 
     private var tracks: [Track] = []
-    private var stepButtons: [[UIButton]] = []  // [trackIndex][stepIndex]
+    private var stepButtons: [[UIButton]] = [] // [trackIndex][stepIndex]
 
     init(coordinator: AudioCoordinator) {
         self.coordinator = coordinator

@@ -61,7 +61,9 @@ final class AudioCoordinator: SequencerEngineDelegate {
         sequencer.setTempo(bpm)
     }
 
-    var transport: TransportState { sequencer.transport }
+    var transport: TransportState {
+        sequencer.transport
+    }
 
     // MARK: Synth control
 
