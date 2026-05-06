@@ -7,7 +7,7 @@ final class ChipsEngineTests: XCTestCase {
     }
 
     func testEngineCreationAndRenderProducesSilenceInM0() throws {
-        let engine = try ChipsEngine(sampleRate: 48_000, maxFrames: 256)
+        let engine = try ChipsEngine(sampleRate: 48000, maxFrames: 256)
         let frames = 256
         let bufferSize = frames * 2
         let buffer = UnsafeMutablePointer<Float>.allocate(capacity: bufferSize)
@@ -23,6 +23,6 @@ final class ChipsEngineTests: XCTestCase {
 
     func testEngineCreationFailsWithInvalidParameters() {
         XCTAssertThrowsError(try ChipsEngine(sampleRate: 0, maxFrames: 256))
-        XCTAssertThrowsError(try ChipsEngine(sampleRate: 48_000, maxFrames: 0))
+        XCTAssertThrowsError(try ChipsEngine(sampleRate: 48000, maxFrames: 0))
     }
 }

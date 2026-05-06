@@ -14,7 +14,7 @@ open class ChipsControl: UIControl {
     }
 
     @available(*, unavailable)
-    public required init?(coder: NSCoder) {
+    public required init?(coder _: NSCoder) {
         fatalError("ChipsControl no soporta NSCoder")
     }
 }
