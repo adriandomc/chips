@@ -142,10 +142,27 @@ final class SynthesizerSectionViewController: UIViewController {
         return row
     }
 
-    @objc private func volumeChanged() { coordinator.setVolume(volumeKnob.value) }
-    @objc private func attackChanged() { coordinator.setAttack(attackKnob.value) }
-    @objc private func decayChanged() { coordinator.setDecay(decayKnob.value) }
-    @objc private func sustainChanged() { coordinator.setSustain(sustainKnob.value) }
-    @objc private func releaseChanged() { coordinator.setRelease(releaseKnob.value) }
-    @objc private func tiltChanged() { coordinator.setTilt(tiltKnob.value) }
+    @objc private func volumeChanged() {
+        coordinator.setVolume(volumeKnob.value)
+    }
+
+    @objc private func attackChanged() {
+        coordinator.setAttack(attackKnob.value)
+    }
+
+    @objc private func decayChanged() {
+        coordinator.setDecay(decayKnob.value)
+    }
+
+    @objc private func sustainChanged() {
+        coordinator.setSustain(sustainKnob.value)
+    }
+
+    @objc private func releaseChanged() {
+        coordinator.setRelease(releaseKnob.value)
+    }
+
+    @objc private func tiltChanged() {
+        coordinator.setTilt(tiltKnob.value)
+    }
 }
