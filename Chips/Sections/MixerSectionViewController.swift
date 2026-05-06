@@ -40,97 +40,23 @@ final class MixerSectionViewController: UIViewController {
 }
 
 private final class ChannelStripView: UIView {
+    private let strokeRight = CALayer()
+
     init(label: String) {
         super.init(frame: .zero)
         backgroundColor = ChipsTheme.contentBackground
-
-        let strokeRight = CALayer()
-        strokeRight.backgroundColor = ChipsTheme.panelStroke.cgColor
         layer.addSublayer(strokeRight)
+        strokeRight.backgroundColor = ChipsTheme.panelStroke.cgColor
 
-        let titleLabel = UILabel()
-        titleLabel.text = label
-        titleLabel.font = ChipsTheme.Font.body(size: 12, weight: .semibold)
-        titleLabel.textColor = ChipsTheme.textPrimary
-        titleLabel.textAlignment = .center
-
-        let eqBox = UIView()
-        eqBox.backgroundColor = ChipsTheme.buttonGray
-        let eqStroke = CALayer()
-        eqStroke.backgroundColor = ChipsTheme.buttonStroke.cgColor
-        eqBox.layer.addSublayer(eqStroke)
-        let eqLabel = UILabel()
-        eqLabel.text = "EQ"
-        eqLabel.font = ChipsTheme.Font.body(size: 11, weight: .medium)
-        eqLabel.textAlignment = .center
-        eqBox.addSubview(eqLabel)
-        eqLabel.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            eqLabel.topAnchor.constraint(equalTo: eqBox.topAnchor, constant: 4),
-            eqLabel.centerXAnchor.constraint(equalTo: eqBox.centerXAnchor),
-        ])
-
-        let send1 = makeSendDot()
-        let send2 = makeSendDot()
-        let sendsRow = UIStackView(arrangedSubviews: [send1, send2])
-        sendsRow.axis = .horizontal
-        sendsRow.spacing = 6
-        sendsRow.alignment = .center
-
-        let sendsLabel = UILabel()
-        sendsLabel.text = "Sends"
-        sendsLabel.font = ChipsTheme.Font.body(size: 10)
-        sendsLabel.textAlignment = .center
-        sendsLabel.textColor = ChipsTheme.textSecondary
-
-        let fader = ChipsFader()
-
-        let panKnob = ChipsKnob()
-        panKnob.label = "Pan"
-        panKnob.minValue = -1
-        panKnob.maxValue = 1
-        panKnob.value = 0
-
-        let muteButton = ChipsButton()
-        muteButton.title = "M"
-        muteButton.titleFont = ChipsTheme.Font.mono(size: 10, weight: .semibold)
-        muteButton.contentInsets = .init(top: 2, left: 6, bottom: 2, right: 6)
-
-        let soloButton = ChipsButton()
-        soloButton.title = "S"
-        soloButton.titleFont = ChipsTheme.Font.mono(size: 10, weight: .semibold)
-        soloButton.contentInsets = .init(top: 2, left: 6, bottom: 2, right: 6)
-
-        let msRow = UIStackView(arrangedSubviews: [muteButton, soloButton])
-        msRow.axis = .horizontal
-        msRow.spacing = 4
-        msRow.distribution = .fillEqually
-
-        let stack = UIStackView(arrangedSubviews: [
-            titleLabel, eqBox, sendsRow, sendsLabel, fader, panKnob, msRow,
-        ])
-        stack.axis = .vertical
-        stack.spacing = 8
-        stack.alignment = .fill
+        let stack = makeContentStack(label: label)
         stack.translatesAutoresizingMaskIntoConstraints = false
         addSubview(stack)
-
         NSLayoutConstraint.activate([
             stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
             stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
             stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -12),
-            eqBox.heightAnchor.constraint(equalToConstant: 36),
-            sendsRow.heightAnchor.constraint(equalToConstant: 18),
-            fader.heightAnchor.constraint(equalToConstant: 200),
-            panKnob.heightAnchor.constraint(equalToConstant: 60),
-            msRow.heightAnchor.constraint(equalToConstant: 22),
         ])
-
-        // Layout sublayers manualmente.
-        layoutIfNeeded()
-        eqStroke.frame = CGRect(x: 0, y: 0, width: eqBox.bounds.width, height: eqBox.bounds.height)
-        strokeRight.frame = CGRect(x: bounds.width - 1, y: 0, width: 1, height: bounds.height)
     }
 
     @available(*, unavailable)
@@ -140,18 +66,114 @@ private final class ChannelStripView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        if let stroke = layer.sublayers?.first(where: { $0.backgroundColor == ChipsTheme.panelStroke.cgColor }) {
-            stroke.frame = CGRect(x: bounds.width - 1, y: 0, width: 1, height: bounds.height)
-        }
+        strokeRight.frame = CGRect(x: bounds.width - 1, y: 0, width: 1, height: bounds.height)
+    }
+
+    private func makeContentStack(label: String) -> UIStackView {
+        let titleLabel = makeTitleLabel(label)
+        let eqBox = makeEqBox()
+        let sendsRow = makeSendsRow()
+        let sendsLabel = makeSendsLabel()
+        let fader = ChipsFader()
+        let panKnob = makePanKnob()
+        let msRow = makeMuteSoloRow()
+
+        let stack = UIStackView(arrangedSubviews: [
+            titleLabel, eqBox, sendsRow, sendsLabel, fader, panKnob, msRow,
+        ])
+        stack.axis = .vertical
+        stack.spacing = 8
+        stack.alignment = .fill
+
+        eqBox.heightAnchor.constraint(equalToConstant: 36).isActive = true
+        sendsRow.heightAnchor.constraint(equalToConstant: 18).isActive = true
+        fader.heightAnchor.constraint(equalToConstant: 200).isActive = true
+        panKnob.heightAnchor.constraint(equalToConstant: 60).isActive = true
+        msRow.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        return stack
+    }
+
+    private func makeTitleLabel(_ text: String) -> UILabel {
+        let titleLabel = UILabel()
+        titleLabel.text = text
+        titleLabel.font = ChipsTheme.Font.body(size: 12, weight: .semibold)
+        titleLabel.textColor = ChipsTheme.textPrimary
+        titleLabel.textAlignment = .center
+        return titleLabel
+    }
+
+    private func makeEqBox() -> UIView {
+        let box = UIView()
+        box.backgroundColor = ChipsTheme.buttonGray
+        let stroke = CALayer()
+        stroke.backgroundColor = ChipsTheme.buttonStroke.cgColor
+        box.layer.addSublayer(stroke)
+        let eqLabel = UILabel()
+        eqLabel.text = "EQ"
+        eqLabel.font = ChipsTheme.Font.body(size: 11, weight: .medium)
+        eqLabel.textAlignment = .center
+        box.addSubview(eqLabel)
+        eqLabel.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            eqLabel.topAnchor.constraint(equalTo: box.topAnchor, constant: 4),
+            eqLabel.centerXAnchor.constraint(equalTo: box.centerXAnchor),
+        ])
+        return box
+    }
+
+    private func makeSendsRow() -> UIStackView {
+        let send1 = makeSendDot()
+        let send2 = makeSendDot()
+        let row = UIStackView(arrangedSubviews: [send1, send2])
+        row.axis = .horizontal
+        row.spacing = 6
+        row.alignment = .center
+        return row
+    }
+
+    private func makeSendsLabel() -> UILabel {
+        let label = UILabel()
+        label.text = "Sends"
+        label.font = ChipsTheme.Font.body(size: 10)
+        label.textAlignment = .center
+        label.textColor = ChipsTheme.textSecondary
+        return label
+    }
+
+    private func makePanKnob() -> ChipsKnob {
+        let knob = ChipsKnob()
+        knob.label = "Pan"
+        knob.minValue = -1
+        knob.maxValue = 1
+        knob.value = 0
+        return knob
+    }
+
+    private func makeMuteSoloRow() -> UIStackView {
+        let muteButton = makeSmallButton(title: "M")
+        let soloButton = makeSmallButton(title: "S")
+        let row = UIStackView(arrangedSubviews: [muteButton, soloButton])
+        row.axis = .horizontal
+        row.spacing = 4
+        row.distribution = .fillEqually
+        return row
+    }
+
+    private func makeSmallButton(title: String) -> ChipsButton {
+        let button = ChipsButton()
+        button.title = title
+        button.titleFont = ChipsTheme.Font.mono(size: 10, weight: .semibold)
+        button.contentInsets = .init(top: 2, left: 6, bottom: 2, right: 6)
+        return button
     }
 
     private func makeSendDot() -> UIView {
-        let v = UIView()
-        v.backgroundColor = ChipsTheme.accentYellow
-        v.layer.cornerRadius = 7
-        v.translatesAutoresizingMaskIntoConstraints = false
-        v.widthAnchor.constraint(equalToConstant: 14).isActive = true
-        v.heightAnchor.constraint(equalToConstant: 14).isActive = true
-        return v
+        let dot = UIView()
+        dot.backgroundColor = ChipsTheme.accentYellow
+        dot.layer.cornerRadius = 7
+        dot.translatesAutoresizingMaskIntoConstraints = false
+        dot.widthAnchor.constraint(equalToConstant: 14).isActive = true
+        dot.heightAnchor.constraint(equalToConstant: 14).isActive = true
+        return dot
     }
 }
