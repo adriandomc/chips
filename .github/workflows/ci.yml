@@ -21,13 +21,24 @@ jobs:
         run: |
           brew update
           brew install swiftlint swiftformat clang-format
+      - name: Tooling versions
+        if: '!cancelled()'
+        run: |
+          swiftlint --version
+          swiftformat --version
+          clang-format --version
       - name: SwiftLint (strict)
         if: '!cancelled()'
         run: swiftlint --strict --reporter github-actions-logging
-      - name: SwiftFormat (lint mode)
+      - name: SwiftFormat (apply + diff)
         if: '!cancelled()'
-        run: swiftformat --lint .
-      - name: clang-format check (C/C++)
+        run: |
+          swiftformat .
+          if ! git diff --exit-code --color=never; then
+            echo "::error::SwiftFormat would modify the listed files. Apply 'swiftformat .' locally."
+            exit 1
+          fi
+      - name: clang-format check (apply + diff)
         if: '!cancelled()'
         run: |
           shopt -s globstar nullglob
@@ -36,7 +47,11 @@ jobs:
             echo "No C/C++ files to check."
             exit 0
           fi
-          clang-format --dry-run --Werror "${files[@]}"
+          clang-format -i "${files[@]}"
+          if ! git diff --exit-code --color=never -- "${files[@]}"; then
+            echo "::error::clang-format would modify the listed files. Apply locally."
+            exit 1
+          fi
 
   build-test:
     name: Build & Test
