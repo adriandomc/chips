@@ -24,9 +24,7 @@ public:
         releaseStart_ = 0.0f;
     }
 
-    void noteOn() {
-        stage_ = Stage::Attack;
-    }
+    void noteOn() { stage_ = Stage::Attack; }
 
     void noteOff() {
         if (stage_ != Stage::Idle) {

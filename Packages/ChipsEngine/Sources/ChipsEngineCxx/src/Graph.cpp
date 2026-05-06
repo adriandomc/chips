@@ -105,8 +105,7 @@ bool Graph::postNoteOn(NodeId nodeId, int midi, float velocity) {
 }
 
 bool Graph::postNoteOff(NodeId nodeId, int midi) {
-    return paramQueue_.push(
-        ParameterEvent{ParameterEvent::Kind::NoteOff, nodeId, static_cast<uint32_t>(midi), 0.0f});
+    return paramQueue_.push(ParameterEvent{ParameterEvent::Kind::NoteOff, nodeId, static_cast<uint32_t>(midi), 0.0f});
 }
 
 bool Graph::compile() {

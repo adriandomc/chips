@@ -174,8 +174,8 @@ void AdditiveSynth::process(const ProcessContext& ctx) {
                 if (voice.phases[static_cast<size_t>(p)] >= kTwoPi) {
                     voice.phases[static_cast<size_t>(p)] -= kTwoPi;
                 }
-                sample += partialAmps_[static_cast<size_t>(p)]
-                          * static_cast<float>(std::sin(voice.phases[static_cast<size_t>(p)]));
+                sample += partialAmps_[static_cast<size_t>(p)] *
+                          static_cast<float>(std::sin(voice.phases[static_cast<size_t>(p)]));
             }
             const float env = voice.envelope.process();
             const float out = sample * env * voice.velocity * volume_;
