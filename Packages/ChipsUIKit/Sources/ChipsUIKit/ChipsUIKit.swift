@@ -1,15 +1,16 @@
 import UIKit
 
 public enum ChipsUIKit {
-    public static let version = "0.0.1-m0"
+    public static let version = "0.3.0-m3"
 }
 
-/// Clase base de todos los componentes custom de Chips. Las subclases concretas
-/// (knob, slider, button, meter, etc.) llegan en M3 una vez existan los diseños.
+/// Clase base de cualquier control custom de Chips. Sin background, sin
+/// gestos por defecto. Las subclases dibujan vía `draw(_:)` o capas custom.
 open class ChipsControl: UIControl {
     override public init(frame: CGRect) {
         super.init(frame: frame)
         backgroundColor = .clear
+        contentMode = .redraw
         isMultipleTouchEnabled = false
     }
 

@@ -5,6 +5,36 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M3 — Framework UI custom (en curso)
+- `ChipsTheme` con paleta del mockup: top bar lavender, sidebar gris,
+  paleta pastel de pistas (10 colores), accent cyan, transport green/red,
+  fuentes mono y sans.
+- Componentes base custom (UIKit puro, sin SwiftUI):
+  `ChipsControl` (base), `ChipsButton` (rectángulo con esquinas duras),
+  `ChipsIconButton` (icon-only para sidebar), `ChipsKnob` (drag vertical
+  con anillo cyan e indicador), `ChipsFader` (vertical), `ChipsTextField`,
+  `ChipsTimecodeLabel`, `ChipsTransportButton` (play/stop dibujados),
+  `ChipsPianoKeyboard` (multi-touch, blancas y negras).
+- App shell: `AppShellViewController` con top bar (timecode + transport),
+  sidebar derecha (6 iconos: sequencer, mixer, synthesizer, grid,
+  settings, help), área de contenido. Navegación por replace child VC.
+- Secciones implementadas:
+  - **Sequencer**: 6 track rows con colores pastel y label "Track N".
+  - **Mixer**: 10 channel strips horizontales con EQ box, sends, fader,
+    pan knob, mute/solo (scroll horizontal).
+  - **Synthesizer**: panel gris con dos filas de knobs (envelope ADSR +
+    oscilador FINETUNE/TUNE/VOLUME/WAVE/SUB OSC/GLIDE) + teclado piano
+    al final. Volumen y notas conectadas al sine generator del engine.
+  - **Grid**: placeholder (M5).
+  - **Settings**: form con NEW/SAVE/LOAD, Project Name, Author, Tempo +
+    TAP TEMPO, Export con File Format, MASTER TRACK / STEMS.
+  - **Help**: títulos + lista de versiones de paquetes.
+- `AudioCoordinator` MainActor-aislado: dueño del `ChipsAudioHost`,
+  expone API simple para start/stop, set frequency/amplitude/enabled
+  del sine. Helper `frequency(forMidi:)` para conversión MIDI → Hz.
+- `SceneDelegate` instancia el coordinator y monta el shell.
+  `RootViewController.swift` eliminado.
+
 ### M2 — Sistema modular (en curso)
 - C++ `IModule` interface (prepare/reset/process/handleParameterChange + I/O spec).
 - `ProcessContext` con audio I/O, frames, sampleRate, tickPosition, tempo.
