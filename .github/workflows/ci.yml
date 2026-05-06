@@ -101,8 +101,8 @@ jobs:
     needs: lint
     timeout-minutes: 30
     env:
-      DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
-      DESTINATION: "platform=iOS Simulator,name=iPhone 16,OS=latest"
+      DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
+      BUILD_DESTINATION: "generic/platform=iOS Simulator"
     steps:
       - uses: actions/checkout@v4
 
@@ -121,6 +121,26 @@ jobs:
             -project Chips.xcodeproj \
             -scheme Chips
 
+      - name: Pick iOS Simulator (latest iPhone available)
+        id: simulator
+        run: |
+          xcrun simctl list devices available
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '
+              .devices
+              | to_entries[]
+              | select(.key | test("iOS"))
+              | .value[]
+              | select(.name | startswith("iPhone"))
+              | .udid' \
+            | head -1)
+          if [ -z "$UDID" ]; then
+            echo "::error::No iPhone simulator found on the runner."
+            exit 1
+          fi
+          echo "Using simulator UDID: $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
       - name: Build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -130,7 +150,7 @@ jobs:
           xcodebuild build \
             -project Chips.xcodeproj \
             -scheme Chips \
-            -destination "$DESTINATION" \
+            -destination "$BUILD_DESTINATION" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee /tmp/build.log | xcbeautify --renderer github-actions
@@ -161,12 +181,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          SIM_UDID: ${{ steps.simulator.outputs.udid }}
         run: |
           set +e
           xcodebuild test \
             -project Chips.xcodeproj \
             -scheme Chips \
-            -destination "$DESTINATION" \
+            -destination "id=$SIM_UDID" \
             -configuration Debug \
             -enableCodeCoverage YES \
             CODE_SIGNING_ALLOWED=NO \
