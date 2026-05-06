@@ -18,8 +18,10 @@ using NodeId = uint32_t;
 constexpr NodeId kInvalidNodeId = 0;
 
 struct ParameterEvent {
+    enum class Kind : uint8_t { Param, NoteOn, NoteOff };
+    Kind kind = Kind::Param;
     NodeId nodeId;
-    uint32_t paramId;
+    uint32_t paramOrMidi;
     float value;
 };
 
@@ -60,6 +62,10 @@ public:
     /// Encola un cambio de parámetro (control thread). Devuelve false si la cola
     /// está llena (drop policy: el cambio se pierde, llamador debe reintentar).
     bool postParameter(NodeId nodeId, uint32_t paramId, float value);
+
+    /// Encola una nota MIDI on/off para el nodo dado.
+    bool postNoteOn(NodeId nodeId, int midi, float velocity);
+    bool postNoteOff(NodeId nodeId, int midi);
 
     /// RT-safe: renderiza `frames` muestras al buffer interleaved stereo.
     void render(float* interleavedStereoOut, int frames);

@@ -3,26 +3,29 @@ import ChipsEngine
 import Foundation
 
 /// Coordinador del estado de audio compartido entre secciones.
-/// Mantiene el `ChipsAudioHost`, expone el `sineNodeId` (M3 placeholder hasta
-/// que tengamos el AdditiveSynth en M4) y maneja transport.
+/// Mantiene el `ChipsAudioHost` y el nodo `AdditiveSynth` que en M4 actúa
+/// como instrumento principal.
 @MainActor
 final class AudioCoordinator {
     let host: ChipsAudioHost
-    let sineNodeId: ChipsNodeId
+    let synthNodeId: ChipsNodeId
 
     init() throws {
         host = try ChipsAudioHost(sampleRate: 48000, maxFrames: 1024)
-        guard let node = host.engine.addNode(.sine) else {
+        guard let node = host.engine.addNode(.additiveSynth) else {
             throw NSError(domain: "AudioCoordinator", code: 1)
         }
         host.engine.setOutputNode(node)
         guard host.engine.compile() else {
             throw NSError(domain: "AudioCoordinator", code: 2)
         }
-        sineNodeId = node
-        host.engine.setParameter(node, sine: .frequency, value: 440)
-        host.engine.setParameter(node, sine: .amplitude, value: 0.25)
-        host.engine.setParameter(node, sine: .enabled, value: 0)
+        synthNodeId = node
+        host.engine.setParameter(node, additive: .volume, value: 0.5)
+        host.engine.setParameter(node, additive: .attack, value: 0.01)
+        host.engine.setParameter(node, additive: .decay, value: 0.15)
+        host.engine.setParameter(node, additive: .sustain, value: 0.7)
+        host.engine.setParameter(node, additive: .release, value: 0.4)
+        host.engine.setParameter(node, additive: .tilt, value: 0.5)
     }
 
     func start() {
@@ -33,20 +36,37 @@ final class AudioCoordinator {
         host.stop()
     }
 
-    func setSineEnabled(_ enabled: Bool) {
-        host.engine.setParameter(sineNodeId, sine: .enabled, value: enabled ? 1 : 0)
+    // MARK: Synth control
+
+    func setVolume(_ v: Float) {
+        host.engine.setParameter(synthNodeId, additive: .volume, value: v)
     }
 
-    func setSineFrequency(_ hz: Float) {
-        host.engine.setParameter(sineNodeId, sine: .frequency, value: hz)
+    func setAttack(_ seconds: Float) {
+        host.engine.setParameter(synthNodeId, additive: .attack, value: seconds)
     }
 
-    func setSineAmplitude(_ a: Float) {
-        host.engine.setParameter(sineNodeId, sine: .amplitude, value: a)
+    func setDecay(_ seconds: Float) {
+        host.engine.setParameter(synthNodeId, additive: .decay, value: seconds)
     }
 
-    /// Convierte una nota MIDI a frecuencia (A4 = 69 = 440 Hz).
-    static func frequency(forMidi midi: Int) -> Float {
-        Float(440.0 * pow(2.0, Double(midi - 69) / 12.0))
+    func setSustain(_ level: Float) {
+        host.engine.setParameter(synthNodeId, additive: .sustain, value: level)
+    }
+
+    func setRelease(_ seconds: Float) {
+        host.engine.setParameter(synthNodeId, additive: .release, value: seconds)
+    }
+
+    func setTilt(_ tilt: Float) {
+        host.engine.setParameter(synthNodeId, additive: .tilt, value: tilt)
+    }
+
+    func noteOn(_ midi: Int, velocity: Float = 1.0) {
+        host.engine.sendNoteOn(synthNodeId, midi: midi, velocity: velocity)
+    }
+
+    func noteOff(_ midi: Int) {
+        host.engine.sendNoteOff(synthNodeId, midi: midi)
     }
 }

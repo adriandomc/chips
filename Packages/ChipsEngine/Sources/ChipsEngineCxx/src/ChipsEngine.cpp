@@ -2,6 +2,7 @@
 
 #include "ChipsEngine/ChipsEngine.h"
 
+#include "AdditiveSynth.hpp"
 #include "DspLoadTracker.hpp"
 #include "Graph.hpp"
 #include "PassthroughModule.hpp"
@@ -29,6 +30,9 @@ std::unique_ptr<chips::IModule> makeModuleFromTypeId(const char* typeId) {
     }
     if (id == CHIPS_NODE_TYPE_TEST_SOURCE) {
         return std::make_unique<chips::TestSourceModule>(64, 1);
+    }
+    if (id == CHIPS_NODE_TYPE_ADDITIVE_SYNTH) {
+        return std::make_unique<chips::AdditiveSynth>();
     }
     return nullptr;
 }
@@ -139,6 +143,20 @@ bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uin
         return false;
     }
     return engine->graph.postParameter(node, param_id, value);
+}
+
+bool chips_engine_send_note_on(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postNoteOn(node, midi, velocity);
+}
+
+bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int midi) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postNoteOff(node, midi);
 }
 
 }  // extern "C"

@@ -10,6 +10,7 @@ public enum ChipsNodeType: String, Sendable {
     case sine
     case passthrough
     case testSource = "test_source"
+    case additiveSynth = "additive_synth"
 }
 
 public typealias ChipsNodeId = UInt32
@@ -21,6 +22,16 @@ public enum SineParam: UInt32 {
     case frequency = 0
     case enabled = 1
     case amplitude = 2
+}
+
+/// Parámetros del `AdditiveSynth` (ver `AdditiveSynth::Param`).
+public enum AdditiveSynthParam: UInt32 {
+    case volume = 0
+    case attack = 1
+    case decay = 2
+    case sustain = 3
+    case release = 4
+    case tilt = 5
 }
 
 /// Facade Swift sobre el motor DSP en C++ con grafo dinámico.
@@ -109,5 +120,21 @@ public final class ChipsEngine: @unchecked Sendable {
     @discardableResult
     public func setParameter(_ id: ChipsNodeId, sine param: SineParam, value: Float) -> Bool {
         setParameter(id, paramId: param.rawValue, value: value)
+    }
+
+    /// Conveniencia: setParameter para el AdditiveSynth.
+    @discardableResult
+    public func setParameter(_ id: ChipsNodeId, additive param: AdditiveSynthParam, value: Float) -> Bool {
+        setParameter(id, paramId: param.rawValue, value: value)
+    }
+
+    @discardableResult
+    public func sendNoteOn(_ id: ChipsNodeId, midi: Int, velocity: Float) -> Bool {
+        chips_engine_send_note_on(handle, id, Int32(midi), velocity)
+    }
+
+    @discardableResult
+    public func sendNoteOff(_ id: ChipsNodeId, midi: Int) -> Bool {
+        chips_engine_send_note_off(handle, id, Int32(midi))
     }
 }
