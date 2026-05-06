@@ -22,10 +22,13 @@ jobs:
           brew update
           brew install swiftlint swiftformat clang-format
       - name: SwiftLint (strict)
+        if: '!cancelled()'
         run: swiftlint --strict --reporter github-actions-logging
       - name: SwiftFormat (lint mode)
+        if: '!cancelled()'
         run: swiftformat --lint .
       - name: clang-format check (C/C++)
+        if: '!cancelled()'
         run: |
           shopt -s globstar nullglob
           files=( Packages/**/*.{c,cc,cpp,h,hpp,m,mm} )

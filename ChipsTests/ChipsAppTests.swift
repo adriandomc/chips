@@ -1,5 +1,5 @@
-import XCTest
 @testable import Chips
+import XCTest
 
 final class ChipsAppTests: XCTestCase {
     @MainActor

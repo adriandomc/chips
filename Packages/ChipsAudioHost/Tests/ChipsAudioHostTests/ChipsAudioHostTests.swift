@@ -1,5 +1,5 @@
-import XCTest
 @testable import ChipsAudioHost
+import XCTest
 
 final class ChipsAudioHostTests: XCTestCase {
     func testVersionIsNotEmpty() {

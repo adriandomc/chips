@@ -1,5 +1,5 @@
-import XCTest
 @testable import ChipsUIKit
+import XCTest
 
 final class ChipsUIKitTests: XCTestCase {
     func testVersionIsNotEmpty() {
