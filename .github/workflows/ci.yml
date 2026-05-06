@@ -63,15 +63,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
-          shopt -s globstar nullglob
-          files=( Packages/**/*.{c,cc,cpp,h,hpp,m,mm} )
-          if [ ${#files[@]} -eq 0 ]; then
+          # macos-15 default bash is 3.2 (no globstar). Usamos `find`.
+          file_list=$(find Packages -type f \( \
+            -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o \
+            -name '*.h' -o -name '*.hpp' -o -name '*.m' -o -name '*.mm' \))
+          if [ -z "$file_list" ]; then
             echo "No C/C++ files to check."
             exit 0
           fi
-          clang-format -i "${files[@]}"
-          if ! git diff --quiet -- "${files[@]}"; then
-            git diff --no-color -- "${files[@]}" > /tmp/clangformat.diff
+          echo "Formatting files:"
+          echo "$file_list"
+          # shellcheck disable=SC2086
+          clang-format -i $file_list
+          # shellcheck disable=SC2086
+          if ! git diff --quiet -- $file_list; then
+            # shellcheck disable=SC2086
+            git diff --no-color -- $file_list > /tmp/clangformat.diff
             echo "::error::clang-format would modify files."
             cat /tmp/clangformat.diff
             if [ -n "$PR_NUMBER" ]; then
@@ -83,7 +90,8 @@ jobs:
               } > /tmp/clangformat-comment.md
               gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/clangformat-comment.md || true
             fi
-            git checkout -- "${files[@]}"
+            # shellcheck disable=SC2086
+            git checkout -- $file_list
             exit 1
           fi
 
