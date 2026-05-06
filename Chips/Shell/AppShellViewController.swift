@@ -102,7 +102,7 @@ final class AppShellViewController: UIViewController {
     }
 
     @objc private func playTapped() {
-        coordinator.start()
+        coordinator.play()
     }
 
     @objc private func stopTapped() {
