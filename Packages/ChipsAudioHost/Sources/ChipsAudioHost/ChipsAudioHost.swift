@@ -12,6 +12,10 @@ public enum ChipsAudioHostError: Error {
 ///
 /// La API pública está aislada al MainActor; el render block corre en el audio thread
 /// y solo captura `ChipsEngine` (que es `@unchecked Sendable`).
+///
+/// - Important: `stop()` debe llamarse antes de soltar la última referencia para
+///   eliminar los observers de NotificationCenter. El `deinit` no puede hacerlo
+///   porque es nonisolated y los observers son no-Sendable.
 @MainActor
 public final class ChipsAudioHost {
     public static let version = "0.1.0-m1"
@@ -21,24 +25,12 @@ public final class ChipsAudioHost {
 
     private let avEngine = AVAudioEngine()
     private var sourceNode: AVAudioSourceNode?
-    private var interruptionObserver: NSObjectProtocol?
-    private var routeChangeObserver: NSObjectProtocol?
-    private var configChangeObserver: NSObjectProtocol?
+    private var interruptionObserver: (any NSObjectProtocol)?
+    private var routeChangeObserver: (any NSObjectProtocol)?
+    private var configChangeObserver: (any NSObjectProtocol)?
 
     public init(sampleRate: Double = 48000, maxFrames: Int = 1024) throws {
         engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: maxFrames)
-    }
-
-    deinit {
-        if let interruptionObserver {
-            NotificationCenter.default.removeObserver(interruptionObserver)
-        }
-        if let routeChangeObserver {
-            NotificationCenter.default.removeObserver(routeChangeObserver)
-        }
-        if let configChangeObserver {
-            NotificationCenter.default.removeObserver(configChangeObserver)
-        }
     }
 
     /// Configura la session, monta el grafo y arranca AVAudioEngine.
@@ -119,8 +111,12 @@ public final class ChipsAudioHost {
             object: session,
             queue: .main
         ) { [weak self] notification in
+            // Extraemos los valores Sendable (UInt) en este thread antes de
+            // cruzar el boundary del MainActor. Notification.userInfo no es Sendable.
+            let typeRaw = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            let optionsRaw = notification.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt
             MainActor.assumeIsolated {
-                self?.handleInterruption(notification)
+                self?.handleInterruption(typeRaw: typeRaw, optionsRaw: optionsRaw)
             }
         }
 
@@ -128,9 +124,9 @@ public final class ChipsAudioHost {
             forName: AVAudioSession.routeChangeNotification,
             object: session,
             queue: .main
-        ) { [weak self] notification in
+        ) { [weak self] _ in
             MainActor.assumeIsolated {
-                self?.handleRouteChange(notification)
+                self?.handleRouteChange()
             }
         }
 
@@ -161,11 +157,8 @@ public final class ChipsAudioHost {
         }
     }
 
-    private func handleInterruption(_ notification: Notification) {
-        guard let info = notification.userInfo,
-              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeValue)
-        else {
+    private func handleInterruption(typeRaw: UInt?, optionsRaw: UInt?) {
+        guard let typeRaw, let type = AVAudioSession.InterruptionType(rawValue: typeRaw) else {
             return
         }
         switch type {
@@ -173,8 +166,8 @@ public final class ChipsAudioHost {
             // El sistema ya pausó el audio; aquí podríamos guardar estado.
             break
         case .ended:
-            if let optionsValue = info[AVAudioSessionInterruptionOptionKey] as? UInt {
-                let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
+            if let optionsRaw {
+                let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
                 if options.contains(.shouldResume) {
                     try? AVAudioSession.sharedInstance().setActive(true)
                 }
@@ -184,7 +177,7 @@ public final class ChipsAudioHost {
         }
     }
 
-    private func handleRouteChange(_: Notification) {
+    private func handleRouteChange() {
         // M1: stub. Manejo robusto de cambios de ruta llega en M2.
     }
 
