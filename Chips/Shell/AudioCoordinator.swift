@@ -1,14 +1,22 @@
 import ChipsAudioHost
+import ChipsCore
 import ChipsEngine
 import Foundation
 
-/// Coordinador del estado de audio compartido entre secciones.
-/// Mantiene el `ChipsAudioHost` y el nodo `AdditiveSynth` que en M4 actúa
-/// como instrumento principal.
+/// Coordinador del estado de audio y transport. Mantiene el `ChipsAudioHost`,
+/// el `AdditiveSynth` como instrumento principal, y un `SequencerEngine` que
+/// dispara notas al synth cuando transport corre.
 @MainActor
-final class AudioCoordinator {
+final class AudioCoordinator: SequencerEngineDelegate {
     let host: ChipsAudioHost
     let synthNodeId: ChipsNodeId
+    let sequencer = SequencerEngine()
+
+    /// Notificación de cambios de timecode (formatted "1.1.00").
+    var onTimecodeChange: ((String) -> Void)?
+
+    /// Notificación de cambios de tick para resaltado de playhead.
+    var onTickChange: ((Int64) -> Void)?
 
     init() throws {
         host = try ChipsAudioHost(sampleRate: 48000, maxFrames: 1024)
@@ -26,15 +34,34 @@ final class AudioCoordinator {
         host.engine.setParameter(node, additive: .sustain, value: 0.7)
         host.engine.setParameter(node, additive: .release, value: 0.4)
         host.engine.setParameter(node, additive: .tilt, value: 0.5)
+        sequencer.delegate = self
     }
 
-    func start() {
+    // MARK: Transport
+
+    /// Arranca el host de audio (si no está activo) y el sequencer.
+    func play() {
         try? host.start()
+        sequencer.play()
     }
 
+    /// Para el sequencer. El host de audio se queda activo (el synth puede sonar
+    /// con el teclado en vivo aunque transport esté detenido).
     func stop() {
+        sequencer.stop()
+    }
+
+    /// Para todo (sequencer + audio host).
+    func stopAll() {
+        sequencer.stop()
         host.stop()
     }
+
+    func setTempo(_ bpm: Float) {
+        sequencer.setTempo(bpm)
+    }
+
+    var transport: TransportState { sequencer.transport }
 
     // MARK: Synth control
 
@@ -68,5 +95,20 @@ final class AudioCoordinator {
 
     func noteOff(_ midi: Int) {
         host.engine.sendNoteOff(synthNodeId, midi: midi)
+    }
+
+    // MARK: SequencerEngineDelegate
+
+    func sequencer(noteOnFor _: Track, note: PatternNote) {
+        noteOn(Int(note.midi), velocity: note.velocity)
+    }
+
+    func sequencer(noteOffFor _: Track, note: PatternNote) {
+        noteOff(Int(note.midi))
+    }
+
+    func sequencer(positionDidChange tick: Int64) {
+        onTickChange?(tick)
+        onTimecodeChange?(sequencer.transport.formatted)
     }
 }

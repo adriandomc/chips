@@ -5,6 +5,28 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M5 — Timeline + Sequencer (en curso)
+- ChipsCore: tipos `PatternNote`, `Pattern`, `Track` (Codable, Sendable)
+  con queries `notesStarting/Ending(in:to:)`. PPQ=480 estándar.
+- ChipsCore: `TransportState` con tempo, currentTick, ppq, isPlaying.
+  Helpers `tickSeconds` y `formatted` (formato "1.1.00").
+- ChipsCore: `SequencerEngine` MainActor-isolated, timer-based @ 100 Hz.
+  Mantiene tracks + tempo, delega note on/off al delegate, soporta loop
+  infinito por wrap del pattern length. M5: control-thread, no
+  sample-accurate (M5.5+ moverá scheduling al audio thread vía SPSC).
+- `AudioCoordinator` ahora es `SequencerEngineDelegate`: dispatch de
+  notas del sequencer al synth. Expone `play()/stop()` que arranca el
+  host de audio y el sequencer juntos. `onTimecodeChange` y
+  `onTickChange` para reflejar transport en la UI.
+- App shell: top bar timecode label se actualiza con la posición del
+  transport. Botones play/stop disparan `coordinator.play/stop`.
+- Sección Grid: step sequencer 6 tracks × 16 steps con pitches base
+  C3..A3. Click en celda toggleea nota; el playhead resalta el step
+  actual con borde cyan al reproducir.
+- Tests: round-trip Codable de Pattern, queries de notas en ventana,
+  TransportState formatted/tickSeconds/clamping, SequencerEngine
+  setTracks + delegate cableado.
+
 ### M4 — AdditiveSynth (en curso)
 - C++ `AdsrEnvelope` lineal (header-only, RT-safe) con stages
   Idle/Attack/Decay/Sustain/Release.
