@@ -13,6 +13,7 @@ final class RootViewController: UIViewController {
     private let versionLabel = UILabel()
 
     private var audioHost: ChipsAudioHost?
+    private var sineNodeId: ChipsNodeId?
     private var refreshTimer: Timer?
 
     override func viewDidLoad() {
@@ -92,8 +93,27 @@ final class RootViewController: UIViewController {
         do {
             let host = try audioHost ?? ChipsAudioHost(sampleRate: 48000, maxFrames: 1024)
             audioHost = host
-            host.engine.setSineFrequency(440)
-            host.engine.setSineEnabled(true)
+
+            // Construir grafo: sine -> output (si todavía no existe).
+            if sineNodeId == nil {
+                guard let sine = host.engine.addNode(.sine) else {
+                    statusLabel.text = "Error: addNode(.sine) falló"
+                    return
+                }
+                host.engine.setOutputNode(sine)
+                guard host.engine.compile() else {
+                    statusLabel.text = "Error: compile() falló"
+                    return
+                }
+                sineNodeId = sine
+            }
+
+            if let sine = sineNodeId {
+                host.engine.setParameter(sine, sine: .frequency, value: 440)
+                host.engine.setParameter(sine, sine: .amplitude, value: 0.25)
+                host.engine.setParameter(sine, sine: .enabled, value: 1.0)
+            }
+
             try host.start()
             playButton.setTitle("Stop", for: .normal)
             startRefreshTimer()

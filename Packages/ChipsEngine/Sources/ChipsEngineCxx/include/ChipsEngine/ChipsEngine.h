@@ -1,5 +1,5 @@
 // ChipsEngine.h — C ABI público del motor DSP.
-// Este header se importa desde Swift; mantenerlo C-puro (sin C++).
+// Mantener C-puro (sin C++) — se importa desde Swift via modulemap.
 
 #ifndef CHIPS_ENGINE_H
 #define CHIPS_ENGINE_H
@@ -14,39 +14,59 @@ extern "C" {
 
 typedef struct ChipsEngineHandle ChipsEngineHandle;
 
-/// Crea un nuevo motor con la sample rate y tamaño máximo de bloque indicados.
-/// Retorna NULL en caso de fallo de allocación.
+typedef uint32_t ChipsNodeId;
+#define CHIPS_INVALID_NODE_ID ((ChipsNodeId)0)
+
+// Identificadores de tipo de nodo (estables).
+#define CHIPS_NODE_TYPE_SINE        "sine"
+#define CHIPS_NODE_TYPE_PASSTHROUGH "passthrough"
+#define CHIPS_NODE_TYPE_TEST_SOURCE "test_source"
+
+// ---- Engine lifecycle ----
+
 ChipsEngineHandle* chips_engine_create(double sample_rate, int max_frames);
-
-/// Libera un motor previamente creado por chips_engine_create.
 void chips_engine_destroy(ChipsEngineHandle* engine);
-
-/// Renderiza `frames` muestras en el buffer de salida intercalado stereo (L,R,L,R,...).
-/// Debe llamarse desde el audio thread. RT-safe.
-void chips_engine_render(ChipsEngineHandle* engine, float* interleaved_stereo_out, int frames);
-
-/// Versión del motor como cadena C-string estática.
 const char* chips_engine_version(void);
 
-// ---- Sine generator (módulo de prueba para M1) ----
-
-/// Establece la frecuencia del generador sinusoidal interno (Hz).
-/// Llamable desde cualquier thread; aplicado en el siguiente buffer.
-void chips_engine_set_sine_frequency(ChipsEngineHandle* engine, float hz);
-
-/// Activa o desactiva el generador sinusoidal. Desactivado = silencio.
-void chips_engine_set_sine_enabled(ChipsEngineHandle* engine, bool enabled);
-
-/// Devuelve true si el generador sinusoidal está activo.
-bool chips_engine_is_sine_enabled(const ChipsEngineHandle* engine);
+/// Renderiza `frames` muestras intercaladas stereo (L,R,L,R,...) en el buffer.
+/// RT-safe; debe llamarse desde el audio thread.
+void chips_engine_render(ChipsEngineHandle* engine, float* interleaved_stereo_out, int frames);
 
 // ---- Métricas ----
 
-/// Carga DSP (0.0 = idle, 1.0 = saturado). Suavizada por EMA.
 float chips_engine_dsp_load(const ChipsEngineHandle* engine);
-
-/// Sample rate efectivo configurado en el motor.
 double chips_engine_sample_rate(const ChipsEngineHandle* engine);
+
+// ---- Grafo dinámico ----
+
+/// Añade un nodo del tipo indicado y devuelve su ID. Retorna 0 si falla.
+ChipsNodeId chips_engine_add_node(ChipsEngineHandle* engine, const char* type_id);
+
+/// Elimina un nodo y todas sus conexiones.
+bool chips_engine_remove_node(ChipsEngineHandle* engine, ChipsNodeId node);
+
+/// Conecta src.outPort -> dst.inPort. Un input solo puede tener un origen.
+bool chips_engine_connect(ChipsEngineHandle* engine,
+                          ChipsNodeId src, int src_port,
+                          ChipsNodeId dst, int dst_port);
+
+bool chips_engine_disconnect(ChipsEngineHandle* engine,
+                             ChipsNodeId src, int src_port,
+                             ChipsNodeId dst, int dst_port);
+
+/// Define el nodo cuya salida (puertos 0,1) se enviará al output del engine.
+void chips_engine_set_output_node(ChipsEngineHandle* engine, ChipsNodeId node);
+
+/// Compila el grafo: ordena topológicamente, asigna buffers y publica plan
+/// al audio thread vía atomic swap. Devuelve false si hay ciclo o config inválida.
+bool chips_engine_compile(ChipsEngineHandle* engine);
+
+/// Encola un cambio de parámetro (RT-safe vía SPSC). Devuelve false si la cola
+/// está llena. El cambio se aplica antes del próximo render block.
+bool chips_engine_set_parameter(ChipsEngineHandle* engine,
+                                ChipsNodeId node,
+                                uint32_t param_id,
+                                float value);
 
 #ifdef __cplusplus
 }
