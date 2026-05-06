@@ -48,16 +48,16 @@ public enum ChipsTheme {
     // MARK: Pista (paleta pastel del mockup, secuencial)
 
     public static let trackPalette: [UIColor] = [
-        UIColor(red: 1.00, green: 0.71, blue: 0.71, alpha: 1.0),  // pink
-        UIColor(red: 1.00, green: 0.99, blue: 0.77, alpha: 1.0),  // cream
-        UIColor(red: 0.71, green: 1.00, blue: 0.77, alpha: 1.0),  // mint
-        UIColor(red: 0.71, green: 1.00, blue: 0.98, alpha: 1.0),  // cyan
-        UIColor(red: 0.71, green: 0.73, blue: 1.00, alpha: 1.0),  // lavender
-        UIColor(red: 1.00, green: 0.71, blue: 0.85, alpha: 1.0),  // hot pink
-        UIColor(red: 1.00, green: 0.85, blue: 0.71, alpha: 1.0),  // peach
-        UIColor(red: 0.85, green: 1.00, blue: 0.71, alpha: 1.0),  // chartreuse
-        UIColor(red: 0.93, green: 0.78, blue: 1.00, alpha: 1.0),  // lilac
-        UIColor(red: 0.71, green: 0.92, blue: 1.00, alpha: 1.0),  // sky
+        UIColor(red: 1.00, green: 0.71, blue: 0.71, alpha: 1.0), // pink
+        UIColor(red: 1.00, green: 0.99, blue: 0.77, alpha: 1.0), // cream
+        UIColor(red: 0.71, green: 1.00, blue: 0.77, alpha: 1.0), // mint
+        UIColor(red: 0.71, green: 1.00, blue: 0.98, alpha: 1.0), // cyan
+        UIColor(red: 0.71, green: 0.73, blue: 1.00, alpha: 1.0), // lavender
+        UIColor(red: 1.00, green: 0.71, blue: 0.85, alpha: 1.0), // hot pink
+        UIColor(red: 1.00, green: 0.85, blue: 0.71, alpha: 1.0), // peach
+        UIColor(red: 0.85, green: 1.00, blue: 0.71, alpha: 1.0), // chartreuse
+        UIColor(red: 0.93, green: 0.78, blue: 1.00, alpha: 1.0), // lilac
+        UIColor(red: 0.71, green: 0.92, blue: 1.00, alpha: 1.0), // sky
     ]
 
     public static func trackColor(at index: Int) -> UIColor {

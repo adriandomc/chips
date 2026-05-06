@@ -41,7 +41,9 @@ public final class ChipsPianoKeyboard: UIView {
         var whiteIndex = 0
         var midi = startingMidiNote
         // Ajustar al primer C/blanca natural si toca una sostenida.
-        while !isWhiteKey(midi: midi) { midi += 1 }
+        while !isWhiteKey(midi: midi) {
+            midi += 1
+        }
 
         while whiteIndex < numberOfWhiteKeys {
             let x = CGFloat(whiteIndex) * whiteWidth
@@ -68,7 +70,7 @@ public final class ChipsPianoKeyboard: UIView {
         }
     }
 
-    override public func draw(_ rect: CGRect) {
+    override public func draw(_: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         // Blancas.
         for (r, midi) in whiteRects {

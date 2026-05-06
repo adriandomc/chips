@@ -20,7 +20,7 @@ public final class ChipsIconButton: ChipsControl {
         didSet { setNeedsDisplay() }
     }
 
-    public var selectedFillColor: UIColor = UIColor.white.withAlphaComponent(0.18) {
+    public var selectedFillColor: UIColor = .white.withAlphaComponent(0.18) {
         didSet { setNeedsDisplay() }
     }
 

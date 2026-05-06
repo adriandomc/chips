@@ -27,7 +27,9 @@ public final class ChipsButton: ChipsControl {
     }
 
     public var contentInsets = UIEdgeInsets(top: 6, left: 14, bottom: 6, right: 14) {
-        didSet { invalidateIntrinsicContentSize(); setNeedsLayout() }
+        didSet { invalidateIntrinsicContentSize()
+            setNeedsLayout()
+        }
     }
 
     override public init(frame: CGRect) {

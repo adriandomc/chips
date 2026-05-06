@@ -53,9 +53,13 @@ public final class ChipsKnob: ChipsControl {
         // Anillo exterior cyan (track del knob).
         ctx.setStrokeColor(ringColor.withAlphaComponent(0.4).cgColor)
         ctx.setLineWidth(3)
-        ctx.addArc(center: center, radius: radius - 1.5,
-                   startAngle: degToRad(135), endAngle: degToRad(45),
-                   clockwise: false)
+        ctx.addArc(
+            center: center,
+            radius: radius - 1.5,
+            startAngle: degToRad(135),
+            endAngle: degToRad(45),
+            clockwise: false
+        )
         ctx.strokePath()
 
         // Arco activo según valor.
@@ -63,9 +67,13 @@ public final class ChipsKnob: ChipsControl {
         let endAngle = degToRad(135 + 270 * CGFloat(normalized))
         ctx.setStrokeColor(ringColor.cgColor)
         ctx.setLineWidth(3)
-        ctx.addArc(center: center, radius: radius - 1.5,
-                   startAngle: degToRad(135), endAngle: endAngle,
-                   clockwise: false)
+        ctx.addArc(
+            center: center,
+            radius: radius - 1.5,
+            startAngle: degToRad(135),
+            endAngle: endAngle,
+            clockwise: false
+        )
         ctx.strokePath()
 
         // Cap interno.
@@ -88,9 +96,11 @@ public final class ChipsKnob: ChipsControl {
         ctx.strokePath()
     }
 
-    private func degToRad(_ deg: CGFloat) -> CGFloat { deg * .pi / 180 }
+    private func degToRad(_ deg: CGFloat) -> CGFloat {
+        deg * .pi / 180
+    }
 
-    // Touch tracking: drag vertical para cambiar valor.
+    /// Touch tracking: drag vertical para cambiar valor.
     private var lastTouchY: CGFloat = 0
 
     override public func beginTracking(_ touch: UITouch, with _: UIEvent?) -> Bool {
