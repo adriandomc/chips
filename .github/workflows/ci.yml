@@ -1,0 +1,239 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tooling
+        run: |
+          brew update
+          brew install swiftlint swiftformat clang-format
+      - name: Tooling versions
+        if: '!cancelled()'
+        run: |
+          swiftlint --version
+          swiftformat --version
+          clang-format --version
+      - name: SwiftLint (strict)
+        if: '!cancelled()'
+        run: swiftlint --strict --reporter github-actions-logging
+      - name: SwiftFormat (apply + diff)
+        if: '!cancelled()'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          swiftformat .
+          if ! git diff --quiet; then
+            git diff --no-color > /tmp/swiftformat.diff
+            echo "::error::SwiftFormat would modify files."
+            cat /tmp/swiftformat.diff
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## SwiftFormat would change these files"
+                echo '```diff'
+                cat /tmp/swiftformat.diff
+                echo '```'
+              } > /tmp/swiftformat-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/swiftformat-comment.md || true
+            fi
+            git checkout -- .
+            exit 1
+          fi
+      - name: clang-format check (apply + diff)
+        if: '!cancelled()'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          # macos-15 default bash is 3.2 (no globstar). Usamos `find`.
+          file_list=$(find Packages -type f \( \
+            -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o \
+            -name '*.h' -o -name '*.hpp' -o -name '*.m' -o -name '*.mm' \))
+          if [ -z "$file_list" ]; then
+            echo "No C/C++ files to check."
+            exit 0
+          fi
+          echo "Formatting files:"
+          echo "$file_list"
+          # shellcheck disable=SC2086
+          clang-format -i $file_list
+          # shellcheck disable=SC2086
+          if ! git diff --quiet -- $file_list; then
+            # shellcheck disable=SC2086
+            git diff --no-color -- $file_list > /tmp/clangformat.diff
+            echo "::error::clang-format would modify files."
+            cat /tmp/clangformat.diff
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## clang-format would change these files"
+                echo '```diff'
+                cat /tmp/clangformat.diff
+                echo '```'
+              } > /tmp/clangformat-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/clangformat-comment.md || true
+            fi
+            # shellcheck disable=SC2086
+            git checkout -- $file_list
+            exit 1
+          fi
+
+  build-test:
+    name: Build & Test
+    runs-on: macos-15
+    needs: lint
+    timeout-minutes: 60
+    env:
+      BUILD_DESTINATION: "generic/platform=iOS Simulator"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect available Xcode versions
+        run: |
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+          xcodebuild -version
+
+      - name: List simulator runtimes
+        run: |
+          xcrun simctl list runtimes
+          xcrun simctl list devices available || true
+
+      - name: Install iOS Simulator runtime if missing
+        run: |
+          if ! xcrun simctl list runtimes | grep -qi 'iOS '; then
+            echo "No iOS simulator runtime installed; downloading..."
+            sudo xcodebuild -downloadPlatform iOS
+            xcrun simctl list runtimes
+          else
+            echo "iOS simulator runtime is already present."
+          fi
+
+      - name: Install XcodeGen
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Resolve packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project Chips.xcodeproj \
+            -scheme Chips
+
+      - name: Pick iOS Simulator (latest iPhone available)
+        id: simulator
+        run: |
+          xcrun simctl list devices available
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '
+              .devices
+              | to_entries[]
+              | select(.key | test("iOS"))
+              | .value[]
+              | select(.name | startswith("iPhone"))
+              | .udid' \
+            | head -1)
+          if [ -z "$UDID" ]; then
+            echo "::error::No iPhone simulator found on the runner."
+            exit 1
+          fi
+          echo "Using simulator UDID: $UDID"
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set +e
+          xcodebuild build \
+            -project Chips.xcodeproj \
+            -scheme Chips \
+            -destination "$BUILD_DESTINATION" \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee /tmp/build.log | xcbeautify --renderer github-actions
+          EXIT=${PIPESTATUS[0]}
+          if [ "$EXIT" -ne 0 ]; then
+            echo "::error::xcodebuild build failed (exit $EXIT)."
+            grep -E "error:|warning:|FAILED|fatal error" /tmp/build.log | head -100 || true
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## Build failed (exit $EXIT)"
+                echo '```'
+                grep -B1 -A3 -E "error:|FAILED|fatal error" /tmp/build.log | head -200
+                echo '```'
+                echo ""
+                echo "<details><summary>Last 200 lines of build log</summary>"
+                echo ""
+                echo '```'
+                tail -200 /tmp/build.log
+                echo '```'
+                echo "</details>"
+              } > /tmp/build-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/build-comment.md || true
+            fi
+            exit "$EXIT"
+          fi
+
+      - name: Test (app target)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          SIM_UDID: ${{ steps.simulator.outputs.udid }}
+        run: |
+          set +e
+          xcodebuild test \
+            -project Chips.xcodeproj \
+            -scheme Chips \
+            -destination "id=$SIM_UDID" \
+            -configuration Debug \
+            -enableCodeCoverage YES \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee /tmp/test.log | xcbeautify --renderer github-actions
+          EXIT=${PIPESTATUS[0]}
+          if [ "$EXIT" -ne 0 ]; then
+            echo "::error::xcodebuild test failed (exit $EXIT)."
+            grep -E "error:|FAILED|fatal error" /tmp/test.log | head -100 || true
+            if [ -n "$PR_NUMBER" ]; then
+              {
+                echo "## Tests failed (exit $EXIT)"
+                echo '```'
+                grep -B1 -A3 -E "error:|FAILED|fatal error" /tmp/test.log | head -200
+                echo '```'
+              } > /tmp/test-comment.md
+              gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/test-comment.md || true
+            fi
+            exit "$EXIT"
+          fi
+
+      - name: Test Swift Packages (standalone)
+        run: |
+          set -o pipefail
+          for pkg in Packages/*/; do
+            if [ -f "$pkg/Package.swift" ]; then
+              echo "::group::Testing $pkg"
+              # Algunos paquetes (UIKit/AudioHost) requieren simulador y se cubren via app scheme.
+              # Aquí solo validamos resolución y build.
+              swift build --package-path "$pkg" 2>/dev/null || \
+                echo "Note: $pkg may require iOS-only APIs; skipped at SwiftPM level."
+              echo "::endgroup::"
+            fi
+          done

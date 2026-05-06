@@ -1,0 +1,30 @@
+# SwiftFormat config — mínimo y seguro para M0.
+# Reglas se añadirán a medida que validemos cada una en CI.
+
+--swiftversion 6.0
+--indent 4
+--maxwidth 140
+--linebreaks lf
+--trimwhitespace always
+--commas always
+--semicolons never
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--ifdef no-indent
+--header strip
+--self remove
+
+--enable sortImports
+--enable trailingCommas
+--enable redundantParens
+--enable redundantReturn
+--enable redundantBackticks
+--enable redundantNilInit
+--enable strongifiedSelf
+--enable blankLinesBetweenScopes
+--enable blankLineAfterImports
+
+--disable wrapMultilineStatementBraces
+
+--exclude .build,.swiftpm,Packages/*/.build,Packages/*/.swiftpm,fastlane,docs

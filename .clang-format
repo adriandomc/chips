@@ -1,0 +1,29 @@
+# clang-format — Chips DSP (C/C++17). Mínimo seguro para M0.
+
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++17
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+
+PointerAlignment: Left
+NamespaceIndentation: None
+AccessModifierOffset: -4
+
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+
+BreakBeforeBraces: Attach
+Cpp11BracedListStyle: true
+FixNamespaceComments: true
+
+# Preserve include order — no reagrupamos, solo respetamos el orden manual.
+IncludeBlocks: Preserve
+SortIncludes: false
+
+MaxEmptyLinesToKeep: 1
+SpacesBeforeTrailingComments: 2
