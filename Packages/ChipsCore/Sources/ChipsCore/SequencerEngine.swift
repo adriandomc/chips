@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 
 /// Recibe eventos del sequencer. Las llamadas vienen del MainActor.
 @MainActor
@@ -76,7 +77,7 @@ public final class SequencerEngine {
         lastTickTime = now
 
         let ticksAdvanced = elapsed / transport.tickSeconds + fractionalTicks
-        let wholeTicks = Int64(ticksAdvanced.rounded(.down))
+        let wholeTicks = Int64(ticksAdvanced.rounded(FloatingPointRoundingRule.down))
         fractionalTicks = ticksAdvanced - Double(wholeTicks)
 
         guard wholeTicks > 0 else { return }
