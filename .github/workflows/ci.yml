@@ -99,15 +99,31 @@ jobs:
     name: Build & Test
     runs-on: macos-15
     needs: lint
-    timeout-minutes: 30
+    timeout-minutes: 60
     env:
-      DEVELOPER_DIR: /Applications/Xcode_16.app/Contents/Developer
       BUILD_DESTINATION: "generic/platform=iOS Simulator"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Show Xcode version
-        run: xcodebuild -version
+      - name: Inspect available Xcode versions
+        run: |
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+          xcodebuild -version
+
+      - name: List simulator runtimes
+        run: |
+          xcrun simctl list runtimes
+          xcrun simctl list devices available || true
+
+      - name: Install iOS Simulator runtime if missing
+        run: |
+          if ! xcrun simctl list runtimes | grep -qi 'iOS '; then
+            echo "No iOS simulator runtime installed; downloading..."
+            sudo xcodebuild -downloadPlatform iOS
+            xcrun simctl list runtimes
+          else
+            echo "iOS simulator runtime is already present."
+          fi
 
       - name: Install XcodeGen
         run: brew install xcodegen xcbeautify
