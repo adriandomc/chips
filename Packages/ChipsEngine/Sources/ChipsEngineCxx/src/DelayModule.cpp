@@ -2,10 +2,36 @@
 
 #include "DelayModule.hpp"
 
+#include "ModuleRegistry.hpp"
+
 #include <algorithm>
 #include <cstring>
 
 namespace chips {
+
+namespace {
+const ParamSpec kDelayParamSpecs[] = {
+    {DelayModule::ParamTime, "time", "s", 0.001f, 2.0f, 0.35f},
+    {DelayModule::ParamFeedback, "feedback", "", 0.0f, 0.95f, 0.35f},
+    {DelayModule::ParamWet, "wet", "", 0.0f, 1.0f, 0.20f},
+};
+
+[[gnu::used]] const bool kRegistered =
+    ModuleRegistry::instance().register_("delay", [] { return std::unique_ptr<IModule>(new DelayModule()); });
+}  // namespace
+
+void DelayModule::forceLink() {}
+
+int DelayModule::numParameters() const {
+    return static_cast<int>(sizeof(kDelayParamSpecs) / sizeof(kDelayParamSpecs[0]));
+}
+
+ParamSpec DelayModule::parameterAt(int index) const {
+    if (index < 0 || index >= numParameters()) {
+        return ParamSpec{};
+    }
+    return kDelayParamSpecs[index];
+}
 
 void DelayModule::prepare(double sampleRate, int /*maxFrames*/) {
     sampleRate_ = sampleRate > 0 ? sampleRate : 48000.0;

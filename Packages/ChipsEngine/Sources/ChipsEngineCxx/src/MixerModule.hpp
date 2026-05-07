@@ -28,6 +28,9 @@ public:
 
     MixerModule();
 
+    static void forceLink();
+
+    const char* typeId() const override { return "mixer"; }
     void prepare(double sampleRate, int maxFrames) override;
     void reset() override;
     void process(const ProcessContext& ctx) override;
@@ -35,6 +38,9 @@ public:
 
     int numAudioInputs() const override { return kMaxChannels * 2; }
     int numAudioOutputs() const override { return 2; }
+
+    int numParameters() const override;
+    ParamSpec parameterAt(int index) const override;
 
 private:
     struct Channel {

@@ -297,6 +297,70 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertGreaterThan((sumSquares / Double(frames * 2)).squareRoot(), 0.01)
     }
 
+    func testRegistryListsAllBuiltinTypes() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        let types = Set(engine.registeredTypes)
+        XCTAssertTrue(types.contains("sine"))
+        XCTAssertTrue(types.contains("passthrough"))
+        XCTAssertTrue(types.contains("test_source"))
+        XCTAssertTrue(types.contains("additive_synth"))
+        XCTAssertTrue(types.contains("mixer"))
+        XCTAssertTrue(types.contains("delay"))
+        XCTAssertTrue(types.contains("reverb"))
+    }
+
+    func testNodeTypeIdMatchesRegistered() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        XCTAssertEqual(engine.nodeTypeId(synth), "additive_synth")
+        XCTAssertNil(engine.nodeTypeId(99999))
+    }
+
+    func testAdditiveSynthExposesSixParameters() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        XCTAssertEqual(engine.parameterCount(of: synth), 6)
+        let specs = engine.parameterSpecs(of: synth)
+        let names = Set(specs.map(\.name))
+        XCTAssertEqual(names, ["volume", "attack", "decay", "sustain", "release", "tilt"])
+        if let attack = specs.first(where: { $0.name == "attack" }) {
+            XCTAssertEqual(attack.unit, "s")
+            XCTAssertGreaterThan(attack.maxValue, attack.minValue)
+            XCTAssertEqual(attack.paramId, AdditiveSynthParam.attack.rawValue)
+        } else {
+            XCTFail("attack spec missing")
+        }
+    }
+
+    func testPassthroughExposesNoParameters() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let pt = engine.addNode(.passthrough) else {
+            XCTFail("addNode")
+            return
+        }
+        XCTAssertEqual(engine.parameterCount(of: pt), 0)
+        XCTAssertNil(engine.parameterSpec(of: pt, at: 0))
+    }
+
+    func testMixerExposesTwelveParametersAcrossFourChannels() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let mixer = engine.addNode(.mixer) else {
+            XCTFail("addNode")
+            return
+        }
+        XCTAssertEqual(engine.parameterCount(of: mixer), 12)
+        let specs = engine.parameterSpecs(of: mixer)
+        XCTAssertEqual(specs.count, 12)
+        XCTAssertTrue(specs.contains { $0.name == "ch0_gain" })
+        XCTAssertTrue(specs.contains { $0.name == "ch3_mute" })
+    }
+
     func testRemoveAndRebuildGraph() throws {
         let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
         guard let sine = engine.addNode(.sine) else {
