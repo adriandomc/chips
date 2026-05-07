@@ -137,6 +137,7 @@ final class ProjectController: SequencerEngineDelegate {
     }
 
     // MARK: Conveniencia (R3 — la UI todavía mira nodos por tipo conocido;
+
     // R4 introduce browser/registry-driven UI que no necesita estos accessors)
 
     var synthRef: NodeRef? {

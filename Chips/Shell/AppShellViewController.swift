@@ -13,7 +13,7 @@ final class AppShellViewController: UIViewController {
     private let coordinator: ProjectController
 
     init(controller: ProjectController) {
-        self.coordinator = controller
+        coordinator = controller
         super.init(nibName: nil, bundle: nil)
     }
 
