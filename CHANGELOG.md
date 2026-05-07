@@ -5,6 +5,38 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-A — Privacy manifest + StoreKit 2 scaffold + About screen
+- `Chips/PrivacyInfo.xcprivacy`: declara `NSPrivacyAccessedAPICategorySystemBootTime`
+  con razón `35F9.1` por usar `CACurrentMediaTime()` en `SequencerEngine`
+  (medir tiempo transcurrido entre eventos del transport). `NSPrivacyTracking`
+  explícitamente `false` y sin `TrackingDomains`/`CollectedDataTypes`.
+- `Chips/Shell/EntitlementManager.swift`: actor `@MainActor` que verifica
+  `AppTransaction.shared` (recibo de compra) en builds de App Store/TestFlight
+  y queda siempre `isEntitled = true` en DEBUG (desarrollo local sin StoreKit
+  configuration). `restorePurchases()` llama a `AppStore.sync()` y revalida
+  el recibo — necesario aunque la app sea paid-up-front (Guideline 3.1.1).
+  `bootstrap()` se invoca al arrancar la escena.
+- `Chips/Sections/AboutViewController.swift`: pantalla modal con identidad
+  (Chips + version + build), placeholders de Privacy Policy, Terms y Open
+  Source Licenses (URLs pendientes hasta publicar el dominio), bloque
+  "Restore Purchases" que delega a `EntitlementManager`, y footer de
+  copyright. Diseño consistente: `contentBackground`, mono para identidad,
+  body para legales, separadores con `panelStroke`.
+- `SettingsSectionViewController`: añade botón "ABOUT" al final que presenta
+  `AboutViewController` modal en `formSheet` envuelto en `UINavigationController`.
+- `SceneDelegate`: dispara `Task { await EntitlementManager.shared.bootstrap() }`
+  inmediatamente tras montar el window (no bloqueante).
+- Tests:
+  - `testEntitlementManagerInDebugIsEntitled`: garantiza que en DEBUG arranca
+    siempre con `isEntitled = true` (no depende de StoreKit configuration).
+  - `testPrivacyManifestDeclaresSystemBootTimeReason`: parsea el `.xcprivacy`
+    embebido en el bundle y verifica que declara SystemBootTime con razón
+    35F9.1 — bloquea regresiones que rompan App Review.
+
+Bloquea solo M11 final lo que necesita el usuario (Apple Developer Program,
+Privacy Policy URL, Terms URL, App Store assets); las URLs son placeholders
+en código, fáciles de sustituir.
+
 ### R4 — Modular foundation: UI generadora + Mixer paramétrico (cierra fundación)
 - C++ `MixerModule` paramétrico: `MixerModule(int numChannels = 8)`. Storage
   `std::vector<Channel>` y `std::vector<ParamSpec>` con nombres en un

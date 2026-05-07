@@ -11,6 +11,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
         InstrumentUIRegistry.registerBuiltins()
+        Task { await EntitlementManager.shared.bootstrap() }
         let window = UIWindow(windowScene: windowScene)
         do {
             let projectController = try ProjectController(graph: ProjectController.defaultGraph())
