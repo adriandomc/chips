@@ -77,7 +77,7 @@ final class ChipsUIKitTests: XCTestCase {
         knob.minValue = 0
         knob.maxValue = 1
         knob.value = 0.42
-        knob.accessibilityValueFormatter = { v in String(format: "%.0f%%", v * 100) }
+        knob.accessibilityValueFormatter = { value in String(format: "%.0f%%", value * 100) }
         XCTAssertEqual(knob.accessibilityValue, "42%")
     }
 

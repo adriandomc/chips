@@ -93,8 +93,8 @@ final class GenericInstrumentPanelViewController: UIViewController {
         let initial = controller.parameter(of: ref, name: spec.name) ?? spec.defaultValue
         knob.value = initial
         let unit = spec.unit
-        knob.accessibilityValueFormatter = { v in
-            unit.isEmpty ? String(format: "%.2f", v) : String(format: "%.2f %@", v, unit)
+        knob.accessibilityValueFormatter = { value in
+            unit.isEmpty ? String(format: "%.2f", value) : String(format: "%.2f %@", value, unit)
         }
         knob.translatesAutoresizingMaskIntoConstraints = false
         knob.heightAnchor.constraint(equalToConstant: 84).isActive = true
