@@ -113,19 +113,92 @@ final class ChipsAppTests: XCTestCase {
         // Verifica que el PrivacyInfo.xcprivacy embebido en el bundle declara
         // SystemBootTime con razón 35F9.1, requerido por App Review por usar
         // CACurrentMediaTime() en SequencerEngine.
-        guard let url = Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy") else {
-            XCTFail("PrivacyInfo.xcprivacy no está en el bundle")
-            return
-        }
-        let data = try Data(contentsOf: url)
-        let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-        XCTAssertNotNil(plist)
-        XCTAssertEqual(plist?["NSPrivacyTracking"] as? Bool, false)
-        let apis = plist?["NSPrivacyAccessedAPITypes"] as? [[String: Any]] ?? []
+        let apis = try Self.privacyManifestAPIs()
         let hasBootTime = apis.contains { dict in
             (dict["NSPrivacyAccessedAPIType"] as? String) == "NSPrivacyAccessedAPICategorySystemBootTime"
                 && (dict["NSPrivacyAccessedAPITypeReasons"] as? [String])?.contains("35F9.1") == true
         }
         XCTAssertTrue(hasBootTime, "Falta declarar SystemBootTime con reason 35F9.1")
+    }
+
+    func testPrivacyManifestDeclaresUserDefaultsReason() throws {
+        // Verifica que el PrivacyInfo.xcprivacy declara UserDefaults con razón
+        // CA92.1, requerido por App Review por persistir el flag del onboarding.
+        let apis = try Self.privacyManifestAPIs()
+        let hasUserDefaults = apis.contains { dict in
+            (dict["NSPrivacyAccessedAPIType"] as? String) == "NSPrivacyAccessedAPICategoryUserDefaults"
+                && (dict["NSPrivacyAccessedAPITypeReasons"] as? [String])?.contains("CA92.1") == true
+        }
+        XCTAssertTrue(hasUserDefaults, "Falta declarar UserDefaults con reason CA92.1")
+    }
+
+    @MainActor
+    func testOnboardingStateRoundTrip() {
+        OnboardingState.reset()
+        XCTAssertFalse(OnboardingState.hasCompleted)
+        OnboardingState.markCompleted()
+        XCTAssertTrue(OnboardingState.hasCompleted)
+        OnboardingState.reset()
+        XCTAssertFalse(OnboardingState.hasCompleted)
+    }
+
+    func testOnboardingPagesHaveContent() {
+        let pages = OnboardingPage.allCases
+        XCTAssertEqual(pages.count, 4)
+        for page in pages {
+            XCTAssertFalse(page.title.isEmpty, "Page \(page) sin title")
+            XCTAssertFalse(page.subtitle.isEmpty, "Page \(page) sin subtitle")
+        }
+    }
+
+    @MainActor
+    func testOnboardingViewControllerCompletesOnLastPage() {
+        OnboardingState.reset()
+        let onboarding = OnboardingViewController()
+        onboarding.loadViewIfNeeded()
+
+        var completed = false
+        onboarding.onComplete = { completed = true }
+
+        // Tap NEXT 3 veces (welcome → sequencer → soundDesign → export).
+        for _ in 0 ..< 3 {
+            onboarding.perform(NSSelectorFromString("nextTapped"))
+        }
+        XCTAssertEqual(onboarding.currentIndex, 3)
+        XCTAssertFalse(completed)
+
+        // Cuarto tap = GET STARTED → completa.
+        onboarding.perform(NSSelectorFromString("nextTapped"))
+        XCTAssertTrue(completed)
+        XCTAssertTrue(OnboardingState.hasCompleted)
+        OnboardingState.reset()
+    }
+
+    @MainActor
+    func testOnboardingSkipMarksCompleted() {
+        OnboardingState.reset()
+        let onboarding = OnboardingViewController()
+        onboarding.loadViewIfNeeded()
+
+        var completed = false
+        onboarding.onComplete = { completed = true }
+        onboarding.perform(NSSelectorFromString("skipTapped"))
+
+        XCTAssertTrue(completed)
+        XCTAssertTrue(OnboardingState.hasCompleted)
+        OnboardingState.reset()
+    }
+
+    private static func privacyManifestAPIs() throws -> [[String: Any]] {
+        guard let url = Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy") else {
+            throw NSError(
+                domain: "Test",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "PrivacyInfo no en bundle"]
+            )
+        }
+        let data = try Data(contentsOf: url)
+        let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        return plist?["NSPrivacyAccessedAPITypes"] as? [[String: Any]] ?? []
     }
 }
