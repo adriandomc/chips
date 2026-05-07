@@ -3,55 +3,84 @@ import ChipsCore
 import ChipsEngine
 import Foundation
 
-/// Coordinador del estado de audio y transport. Mantiene el `ChipsAudioHost`,
-/// el `AdditiveSynth` como instrumento principal, y un `SequencerEngine` que
-/// dispara notas al synth cuando transport corre.
+/// Coordinador del estado de audio + transport. Construye el grafo:
+/// `AdditiveSynth → Mixer (ch0) → Delay → Reverb → output`.
 @MainActor
 final class AudioCoordinator: SequencerEngineDelegate {
     let host: ChipsAudioHost
     let synthNodeId: ChipsNodeId
+    let mixerNodeId: ChipsNodeId
+    let delayNodeId: ChipsNodeId
+    let reverbNodeId: ChipsNodeId
     let sequencer = SequencerEngine()
 
-    /// Notificación de cambios de timecode (formatted "1.1.00").
     var onTimecodeChange: ((String) -> Void)?
-
-    /// Notificación de cambios de tick para resaltado de playhead.
     var onTickChange: ((Int64) -> Void)?
 
     init() throws {
         host = try ChipsAudioHost(sampleRate: 48000, maxFrames: 1024)
-        guard let node = host.engine.addNode(.additiveSynth) else {
+        let engine = host.engine
+
+        guard let synth = engine.addNode(.additiveSynth),
+              let mixer = engine.addNode(.mixer),
+              let delay = engine.addNode(.delay),
+              let reverb = engine.addNode(.reverb)
+        else {
             throw NSError(domain: "AudioCoordinator", code: 1)
         }
-        host.engine.setOutputNode(node)
-        guard host.engine.compile() else {
+        synthNodeId = synth
+        mixerNodeId = mixer
+        delayNodeId = delay
+        reverbNodeId = reverb
+
+        // synth (stereo) → mixer ch0 (inputs 0 y 1)
+        engine.connect(synth, port: 0, to: mixer, port: 0)
+        engine.connect(synth, port: 1, to: mixer, port: 1)
+
+        // mixer master → delay → reverb → output
+        engine.connect(mixer, port: 0, to: delay, port: 0)
+        engine.connect(mixer, port: 1, to: delay, port: 1)
+        engine.connect(delay, port: 0, to: reverb, port: 0)
+        engine.connect(delay, port: 1, to: reverb, port: 1)
+        engine.setOutputNode(reverb)
+
+        guard engine.compile() else {
             throw NSError(domain: "AudioCoordinator", code: 2)
         }
-        synthNodeId = node
-        host.engine.setParameter(node, additive: .volume, value: 0.5)
-        host.engine.setParameter(node, additive: .attack, value: 0.01)
-        host.engine.setParameter(node, additive: .decay, value: 0.15)
-        host.engine.setParameter(node, additive: .sustain, value: 0.7)
-        host.engine.setParameter(node, additive: .release, value: 0.4)
-        host.engine.setParameter(node, additive: .tilt, value: 0.5)
+
+        // Defaults musicales.
+        engine.setParameter(synth, additive: .volume, value: 0.5)
+        engine.setParameter(synth, additive: .attack, value: 0.01)
+        engine.setParameter(synth, additive: .decay, value: 0.15)
+        engine.setParameter(synth, additive: .sustain, value: 0.7)
+        engine.setParameter(synth, additive: .release, value: 0.4)
+        engine.setParameter(synth, additive: .tilt, value: 0.5)
+
+        engine.setMixerParameter(mixer, channel: 0, kind: .gain, value: 0.8)
+        engine.setMixerParameter(mixer, channel: 0, kind: .pan, value: 0.0)
+
+        engine.setParameter(delay, delay: .time, value: 0.35)
+        engine.setParameter(delay, delay: .feedback, value: 0.35)
+        engine.setParameter(delay, delay: .wet, value: 0.20)
+
+        engine.setParameter(reverb, reverb: .roomSize, value: 0.7)
+        engine.setParameter(reverb, reverb: .damping, value: 0.3)
+        engine.setParameter(reverb, reverb: .wet, value: 0.20)
+
         sequencer.delegate = self
     }
 
     // MARK: Transport
 
-    /// Arranca el host de audio (si no está activo) y el sequencer.
     func play() {
         try? host.start()
         sequencer.play()
     }
 
-    /// Para el sequencer. El host de audio se queda activo (el synth puede sonar
-    /// con el teclado en vivo aunque transport esté detenido).
     func stop() {
         sequencer.stop()
     }
 
-    /// Para todo (sequencer + audio host).
     func stopAll() {
         sequencer.stop()
         host.stop()
@@ -65,7 +94,7 @@ final class AudioCoordinator: SequencerEngineDelegate {
         sequencer.transport
     }
 
-    // MARK: Synth control
+    // MARK: Synth
 
     func setVolume(_ value: Float) {
         host.engine.setParameter(synthNodeId, additive: .volume, value: value)
@@ -97,6 +126,20 @@ final class AudioCoordinator: SequencerEngineDelegate {
 
     func noteOff(_ midi: Int) {
         host.engine.sendNoteOff(synthNodeId, midi: midi)
+    }
+
+    // MARK: Mixer
+
+    func setMixerGain(channel: Int, gain: Float) {
+        host.engine.setMixerParameter(mixerNodeId, channel: channel, kind: .gain, value: gain)
+    }
+
+    func setMixerPan(channel: Int, pan: Float) {
+        host.engine.setMixerParameter(mixerNodeId, channel: channel, kind: .pan, value: pan)
+    }
+
+    func setMixerMuted(channel: Int, muted: Bool) {
+        host.engine.setMixerParameter(mixerNodeId, channel: channel, kind: .mute, value: muted ? 1 : 0)
     }
 
     // MARK: SequencerEngineDelegate

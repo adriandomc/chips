@@ -11,6 +11,9 @@ public enum ChipsNodeType: String, Sendable {
     case passthrough
     case testSource = "test_source"
     case additiveSynth = "additive_synth"
+    case mixer
+    case delay
+    case reverb
 }
 
 public typealias ChipsNodeId = UInt32
@@ -32,6 +35,28 @@ public enum AdditiveSynthParam: UInt32 {
     case sustain = 3
     case release = 4
     case tilt = 5
+}
+
+/// Parámetros del `Delay`.
+public enum DelayParam: UInt32 {
+    case time = 0
+    case feedback = 1
+    case wet = 2
+}
+
+/// Parámetros del `Reverb`.
+public enum ReverbParam: UInt32 {
+    case roomSize = 0
+    case damping = 1
+    case wet = 2
+}
+
+/// Parámetros del `Mixer`. El paramId combina canal y kind:
+/// `(channel << 8) | kind`. Helpers en `ChipsEngine.setMixer*`.
+public enum MixerParamKind: UInt32 {
+    case gain = 0
+    case pan = 1
+    case mute = 2
 }
 
 /// Facade Swift sobre el motor DSP en C++ con grafo dinámico.
@@ -126,6 +151,28 @@ public final class ChipsEngine: @unchecked Sendable {
     @discardableResult
     public func setParameter(_ id: ChipsNodeId, additive param: AdditiveSynthParam, value: Float) -> Bool {
         setParameter(id, paramId: param.rawValue, value: value)
+    }
+
+    @discardableResult
+    public func setParameter(_ id: ChipsNodeId, delay param: DelayParam, value: Float) -> Bool {
+        setParameter(id, paramId: param.rawValue, value: value)
+    }
+
+    @discardableResult
+    public func setParameter(_ id: ChipsNodeId, reverb param: ReverbParam, value: Float) -> Bool {
+        setParameter(id, paramId: param.rawValue, value: value)
+    }
+
+    /// Mixer: setParameter dirigido a un canal específico.
+    @discardableResult
+    public func setMixerParameter(
+        _ id: ChipsNodeId,
+        channel: Int,
+        kind: MixerParamKind,
+        value: Float
+    ) -> Bool {
+        let paramId = (UInt32(channel) << 8) | kind.rawValue
+        return setParameter(id, paramId: paramId, value: value)
     }
 
     @discardableResult

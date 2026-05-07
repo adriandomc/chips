@@ -2,6 +2,22 @@ import ChipsUIKit
 import UIKit
 
 final class MixerSectionViewController: UIViewController {
+    private let coordinator: AudioCoordinator
+    /// Solo los primeros `kMaxChannels` (4) están cableados al mixer real;
+    /// el resto son visuales hasta que ampliemos MixerModule.
+    private let visibleStripCount = 10
+    private let wiredChannelCount = 4
+
+    init(coordinator: AudioCoordinator) {
+        self.coordinator = coordinator
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("MixerSectionViewController no soporta NSCoder")
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = ChipsTheme.contentBackground
@@ -18,8 +34,13 @@ final class MixerSectionViewController: UIViewController {
         row.translatesAutoresizingMaskIntoConstraints = false
         scroll.addSubview(row)
 
-        for i in 0 ..< 10 {
-            let strip = ChannelStripView(label: "Track \(i + 1)")
+        for i in 0 ..< visibleStripCount {
+            let isWired = i < wiredChannelCount
+            let strip = ChannelStripView(
+                label: "Track \(i + 1)",
+                coordinator: isWired ? coordinator : nil,
+                channelIndex: isWired ? i : nil
+            )
             row.addArrangedSubview(strip)
             strip.widthAnchor.constraint(equalToConstant: 78).isActive = true
         }
@@ -41,8 +62,15 @@ final class MixerSectionViewController: UIViewController {
 
 private final class ChannelStripView: UIView {
     private let strokeRight = CALayer()
+    private weak var coordinator: AudioCoordinator?
+    private let channelIndex: Int?
+    private let fader = ChipsFader()
+    private let panKnob = ChipsKnob()
+    private let muteButton = ChipsButton()
 
-    init(label: String) {
+    init(label: String, coordinator: AudioCoordinator?, channelIndex: Int?) {
+        self.coordinator = coordinator
+        self.channelIndex = channelIndex
         super.init(frame: .zero)
         backgroundColor = ChipsTheme.contentBackground
         layer.addSublayer(strokeRight)
@@ -57,6 +85,12 @@ private final class ChannelStripView: UIView {
             stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
             stack.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor, constant: -12),
         ])
+
+        if channelIndex != nil {
+            fader.addTarget(self, action: #selector(faderChanged), for: .valueChanged)
+            panKnob.addTarget(self, action: #selector(panChanged), for: .valueChanged)
+            muteButton.addTarget(self, action: #selector(muteTapped), for: .touchUpInside)
+        }
     }
 
     @available(*, unavailable)
@@ -74,9 +108,22 @@ private final class ChannelStripView: UIView {
         let eqBox = makeEqBox()
         let sendsRow = makeSendsRow()
         let sendsLabel = makeSendsLabel()
-        let fader = ChipsFader()
-        let panKnob = makePanKnob()
-        let msRow = makeMuteSoloRow()
+        fader.value = 0.8
+
+        panKnob.label = "Pan"
+        panKnob.minValue = -1
+        panKnob.maxValue = 1
+        panKnob.value = 0
+
+        let soloButton = makeSmallButton(title: "S")
+        muteButton.title = "M"
+        muteButton.titleFont = ChipsTheme.Font.mono(size: 10, weight: .semibold)
+        muteButton.contentInsets = .init(top: 2, left: 6, bottom: 2, right: 6)
+
+        let msRow = UIStackView(arrangedSubviews: [muteButton, soloButton])
+        msRow.axis = .horizontal
+        msRow.spacing = 4
+        msRow.distribution = .fillEqually
 
         let stack = UIStackView(arrangedSubviews: [
             titleLabel, eqBox, sendsRow, sendsLabel, fader, panKnob, msRow,
@@ -122,9 +169,7 @@ private final class ChannelStripView: UIView {
     }
 
     private func makeSendsRow() -> UIStackView {
-        let send1 = makeSendDot()
-        let send2 = makeSendDot()
-        let row = UIStackView(arrangedSubviews: [send1, send2])
+        let row = UIStackView(arrangedSubviews: [makeSendDot(), makeSendDot()])
         row.axis = .horizontal
         row.spacing = 6
         row.alignment = .center
@@ -138,25 +183,6 @@ private final class ChannelStripView: UIView {
         label.textAlignment = .center
         label.textColor = ChipsTheme.textSecondary
         return label
-    }
-
-    private func makePanKnob() -> ChipsKnob {
-        let knob = ChipsKnob()
-        knob.label = "Pan"
-        knob.minValue = -1
-        knob.maxValue = 1
-        knob.value = 0
-        return knob
-    }
-
-    private func makeMuteSoloRow() -> UIStackView {
-        let muteButton = makeSmallButton(title: "M")
-        let soloButton = makeSmallButton(title: "S")
-        let row = UIStackView(arrangedSubviews: [muteButton, soloButton])
-        row.axis = .horizontal
-        row.spacing = 4
-        row.distribution = .fillEqually
-        return row
     }
 
     private func makeSmallButton(title: String) -> ChipsButton {
@@ -175,5 +201,21 @@ private final class ChannelStripView: UIView {
         dot.widthAnchor.constraint(equalToConstant: 14).isActive = true
         dot.heightAnchor.constraint(equalToConstant: 14).isActive = true
         return dot
+    }
+
+    @objc private func faderChanged() {
+        guard let coordinator, let idx = channelIndex else { return }
+        coordinator.setMixerGain(channel: idx, gain: fader.value)
+    }
+
+    @objc private func panChanged() {
+        guard let coordinator, let idx = channelIndex else { return }
+        coordinator.setMixerPan(channel: idx, pan: panKnob.value)
+    }
+
+    @objc private func muteTapped() {
+        guard let coordinator, let idx = channelIndex else { return }
+        muteButton.isSelected.toggle()
+        coordinator.setMixerMuted(channel: idx, muted: muteButton.isSelected)
     }
 }
