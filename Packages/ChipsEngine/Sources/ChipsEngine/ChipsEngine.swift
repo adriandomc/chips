@@ -100,7 +100,13 @@ public final class ChipsEngine: @unchecked Sendable {
 
     /// Añade un nodo del tipo dado y devuelve su ID. nil si el tipo es desconocido.
     public func addNode(_ type: ChipsNodeType) -> ChipsNodeId? {
-        let id = type.rawValue.withCString { chips_engine_add_node(handle, $0) }
+        addNode(typeId: type.rawValue)
+    }
+
+    /// Sobrecarga string-based para tipos arbitrarios (registrados via
+    /// `ModuleRegistry`, posiblemente fuera de `ChipsNodeType`).
+    public func addNode(typeId: String) -> ChipsNodeId? {
+        let id = typeId.withCString { chips_engine_add_node(handle, $0) }
         return id == chipsInvalidNodeId ? nil : id
     }
 

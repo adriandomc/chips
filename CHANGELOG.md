@@ -5,6 +5,53 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### R3 — Modular foundation: ProjectController reemplaza AudioCoordinator (en curso)
+- `AudioCoordinator` eliminado. Sustituido por `ProjectController`
+  (`Chips/Shell/ProjectController.swift`), MainActor-aislado, dueño del
+  `ChipsAudioHost` y el `SequencerEngine`.
+- **Single source of truth**: `private(set) var graph: ProjectGraph`. Todo
+  cambio (add/remove node, connect, setParameter) actualiza el modelo y
+  recompila el motor C++ desde él. Mapa interno `nodeIds: [NodeRef:
+  ChipsNodeId]` para traducir entre identidad estable y handle efímero.
+- **Plug-and-play**:
+  - `addNode(typeId:displayName:) throws -> NodeRef` añade *cualquier* tipo
+    registrado en `ModuleRegistry` (no requiere caso en el coordinator).
+  - `removeNode(_:)`, `setParameter(of:paramName:value:)` (busca paramId
+    via `parameterSpecs(of:)` del engine), `sendNoteOn/Off`, etc.
+- **Routing track→instrumento real**: el delegate del sequencer ahora
+  enruta cada nota al `track.instrumentRef`. El default graph asigna el
+  synth como instrumento de cada track creado por la Grid.
+- **Persistencia v2-first**: `currentGraph(name:author:)` produce un
+  `ProjectGraph` serializable; `apply(graph:)` reconstruye el motor desde
+  uno cargado. `ProjectStorage.decodeProject` migra v1 transparentemente.
+- **Export WAV** sigue produciendo 16-bit stereo a través del nuevo
+  controller, con la misma limitación documentada (render en tiempo real).
+- Swift facade: `ChipsEngine.addNode(typeId: String)` overload añadido
+  para tipos arbitrarios fuera del enum `ChipsNodeType`.
+
+App refactor:
+- `SceneDelegate` instancia `ProjectController` con `defaultGraph()`.
+- `AppShellViewController(controller:)`.
+- `SynthesizerSectionViewController(controller:)` lee/escribe parámetros
+  via `controller.setParameter(of: synthRef, paramName:, value:)`.
+- `MixerSectionViewController` los strips usan
+  `setParameter(of: mixerRef, paramName: "ch<N>_<gain|pan|mute>", value:)`.
+- `GridSectionViewController` crea tracks con `instrumentRef = controller.synthRef`.
+  Si el grafo cargado ya trae tracks, los respeta.
+- `SettingsSectionViewController` opera sobre `ProjectGraph`: NEW aplica
+  default; SAVE escribe v2; LOAD migra v1 si hace falta.
+
+Tests:
+- `ProjectController` inicializa con default graph (refs no nil).
+- `AppShell` carga.
+- `setParameter(of:paramName:)` persiste el cambio en el `graph`.
+- `currentGraph()` refleja edits de tempo y parámetros del synth.
+
+R4 (siguiente PR) traerá la UI generadora desde metadata + `MixerModule`
+paramétrico (numChannels). Tras eso, añadir un BeatBox será **3 archivos**
+nuevos (BeatBox.hpp/.cpp + opcional BeatBoxPanelViewController.swift)
+sin editar nada del coordinator, snapshot ni motor.
+
 ### R2 — Modular foundation: ProjectGraph dinámico + migrator v1→v2 (en curso)
 - ChipsCore: `ProjectGraph` (Codable, schemaVersion=2). Modelo serializable
   del grafo del proyecto: lista de `NodeInstance` (typeId + displayName +

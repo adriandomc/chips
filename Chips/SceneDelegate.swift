@@ -2,7 +2,7 @@ import UIKit
 
 final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
-    private var coordinator: AudioCoordinator?
+    private var controller: ProjectController?
 
     func scene(
         _ scene: UIScene,
@@ -12,12 +12,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
         let window = UIWindow(windowScene: windowScene)
         do {
-            let coord = try AudioCoordinator()
-            coordinator = coord
-            window.rootViewController = AppShellViewController(coordinator: coord)
+            let projectController = try ProjectController(graph: ProjectController.defaultGraph())
+            controller = projectController
+            window.rootViewController = AppShellViewController(controller: projectController)
         } catch {
-            // Fallback si el engine no se pudo crear (no debería pasar en ningún
-            // dispositivo soportado). Mostramos algo en lugar de crashear.
             window.rootViewController = ErrorViewController(message: "Audio engine init failed: \(error)")
         }
         window.makeKeyAndVisible()
