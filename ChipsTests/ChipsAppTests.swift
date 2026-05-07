@@ -86,4 +86,32 @@ final class ChipsAppTests: XCTestCase {
         }
         XCTAssertEqual(controller.host.engine.parameterCount(of: chipsId), 24)
     }
+
+    @MainActor
+    func testEntitlementManagerInDebugIsEntitled() {
+        // En builds de DEBUG el manager arranca con isEntitled = true, sin
+        // depender de StoreKit. Esto garantiza que la app es usable durante
+        // desarrollo y CI sin StoreKit configuration files.
+        XCTAssertTrue(EntitlementManager.shared.isEntitled)
+    }
+
+    func testPrivacyManifestDeclaresSystemBootTimeReason() throws {
+        // Verifica que el PrivacyInfo.xcprivacy embebido en el bundle declara
+        // SystemBootTime con razón 35F9.1, requerido por App Review por usar
+        // CACurrentMediaTime() en SequencerEngine.
+        guard let url = Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy") else {
+            XCTFail("PrivacyInfo.xcprivacy no está en el bundle")
+            return
+        }
+        let data = try Data(contentsOf: url)
+        let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
+        XCTAssertNotNil(plist)
+        XCTAssertEqual(plist?["NSPrivacyTracking"] as? Bool, false)
+        let apis = plist?["NSPrivacyAccessedAPITypes"] as? [[String: Any]] ?? []
+        let hasBootTime = apis.contains { dict in
+            (dict["NSPrivacyAccessedAPIType"] as? String) == "NSPrivacyAccessedAPICategorySystemBootTime"
+                && (dict["NSPrivacyAccessedAPITypeReasons"] as? [String])?.contains("35F9.1") == true
+        }
+        XCTAssertTrue(hasBootTime, "Falta declarar SystemBootTime con reason 35F9.1")
+    }
 }

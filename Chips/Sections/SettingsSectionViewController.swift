@@ -15,6 +15,7 @@ final class SettingsSectionViewController: UIViewController {
     private let formatButton = ChipsButton()
     private let mainTrackButton = ChipsButton()
     private let stemsButton = ChipsButton()
+    private let aboutButton = ChipsButton()
 
     init(controller: ProjectController) {
         self.controller = controller
@@ -46,6 +47,7 @@ final class SettingsSectionViewController: UIViewController {
         formatButton.title = "WAV"
         mainTrackButton.title = "MASTER TRACK"
         stemsButton.title = "STEMS"
+        aboutButton.title = "ABOUT"
     }
 
     private func configureFields() {
@@ -60,6 +62,7 @@ final class SettingsSectionViewController: UIViewController {
         loadButton.addTarget(self, action: #selector(loadTapped), for: .touchUpInside)
         mainTrackButton.addTarget(self, action: #selector(exportMainTrackTapped), for: .touchUpInside)
         stemsButton.addTarget(self, action: #selector(stemsTapped), for: .touchUpInside)
+        aboutButton.addTarget(self, action: #selector(aboutTapped), for: .touchUpInside)
     }
 
     private func layoutContent() {
@@ -72,6 +75,7 @@ final class SettingsSectionViewController: UIViewController {
         let formatRow = makeFormatRow()
         let exportRow = makeRow(buttons: [mainTrackButton, stemsButton])
 
+        let aboutSeparator = makeSeparator()
         let stack = UIStackView(arrangedSubviews: [
             topRow,
             nameRow,
@@ -82,6 +86,8 @@ final class SettingsSectionViewController: UIViewController {
             formatRow,
             UIView(),
             exportRow,
+            aboutSeparator,
+            aboutButton,
         ])
         stack.axis = .vertical
         stack.spacing = 14
@@ -231,6 +237,13 @@ final class SettingsSectionViewController: UIViewController {
 
     @objc private func stemsTapped() {
         showAlert(title: "Stems", message: "Pendiente (export por canal del mixer).")
+    }
+
+    @objc private func aboutTapped() {
+        let about = AboutViewController()
+        let nav = UINavigationController(rootViewController: about)
+        nav.modalPresentationStyle = .formSheet
+        present(nav, animated: true)
     }
 
     private func documentsDirectory() -> URL {
