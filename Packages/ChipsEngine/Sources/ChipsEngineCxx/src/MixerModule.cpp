@@ -14,15 +14,9 @@ namespace {
 [[gnu::used]] const bool kRegistered =
     ModuleRegistry::instance().register_("mixer", [] { return std::unique_ptr<IModule>(new MixerModule()); });
 
-void appendChannelSpec(std::vector<std::string>& names,
-                       std::vector<ParamSpec>& specs,
-                       int channel,
-                       MixerModule::ParamKind kind,
-                       const char* suffix,
-                       const char* unit,
-                       float minValue,
-                       float maxValue,
-                       float defaultValue) {
+void appendChannelSpec(std::vector<std::string>& names, std::vector<ParamSpec>& specs, int channel,
+                       MixerModule::ParamKind kind, const char* suffix, const char* unit, float minValue,
+                       float maxValue, float defaultValue) {
     names.emplace_back("ch" + std::to_string(channel) + "_" + suffix);
     specs.push_back(ParamSpec{
         MixerModule::paramId(channel, kind),
@@ -37,8 +31,7 @@ void appendChannelSpec(std::vector<std::string>& names,
 
 void MixerModule::forceLink() {}
 
-MixerModule::MixerModule(int numChannels) :
-    numChannels_(std::max(1, std::min(kMaxChannels, numChannels))) {
+MixerModule::MixerModule(int numChannels) : numChannels_(std::max(1, std::min(kMaxChannels, numChannels))) {
     channels_.assign(static_cast<size_t>(numChannels_), Channel{});
 
     const size_t totalSpecs = static_cast<size_t>(numChannels_) * 3;
