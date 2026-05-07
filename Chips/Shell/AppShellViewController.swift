@@ -76,7 +76,7 @@ final class AppShellViewController: UIViewController {
         case .mixer: MixerSectionViewController(coordinator: coordinator)
         case .synthesizer: SynthesizerSectionViewController(coordinator: coordinator)
         case .grid: GridSectionViewController(coordinator: coordinator)
-        case .settings: SettingsSectionViewController()
+        case .settings: SettingsSectionViewController(coordinator: coordinator)
         case .help: HelpSectionViewController()
         }
         replaceContent(with: newChild)

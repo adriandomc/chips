@@ -73,6 +73,55 @@ final class ChipsCoreTests: XCTestCase {
         XCTAssertEqual(engine.tracks.first?.name, "T1")
     }
 
+    func testProjectSnapshotRoundTrip() throws {
+        var snapshot = ProjectSnapshot(name: "demo", author: "me", tempoBpm: 95)
+        var pattern = Pattern(name: "p", lengthTicks: 1920)
+        pattern.addNote(PatternNote(startTick: 0, lengthTicks: 120, midi: 60))
+        snapshot.tracks = [Track(name: "T1", colorIndex: 0, patterns: [pattern])]
+        snapshot.synth.attack = 0.05
+        snapshot.delay.feedback = 0.6
+
+        let data = try ProjectStorage.encode(snapshot)
+        let decoded = try ProjectStorage.decode(data)
+        XCTAssertEqual(decoded.name, "demo")
+        XCTAssertEqual(decoded.tempoBpm, 95)
+        XCTAssertEqual(decoded.synth.attack, 0.05, accuracy: 1.0e-6)
+        XCTAssertEqual(decoded.delay.feedback, 0.6, accuracy: 1.0e-6)
+        XCTAssertEqual(decoded.tracks.count, 1)
+        XCTAssertEqual(decoded.tracks[0].patterns[0].notes.count, 1)
+    }
+
+    func testProjectStorageRejectsFutureSchemaVersion() {
+        let payload = #"""
+        {"schemaVersion":999,"name":"x","author":"","tempoBpm":120,"tracks":[],
+        "synth":{"volume":0.5,"attack":0.01,"decay":0.1,"sustain":0.7,"release":0.3,"tilt":0.5},
+        "mixerChannels":[],
+        "delay":{"timeSeconds":0.3,"feedback":0.3,"wet":0.2},
+        "reverb":{"roomSize":0.7,"damping":0.3,"wet":0.2}}
+        """#
+        let data = Data(payload.utf8)
+        XCTAssertThrowsError(try ProjectStorage.decode(data))
+    }
+
+    func testWavWriterProducesValidRiffHeader() throws {
+        let frames = 480
+        var samples = [Float](repeating: 0, count: frames * 2)
+        for i in 0 ..< frames {
+            samples[i * 2] = sin(Float(i) * 0.1) * 0.5
+            samples[i * 2 + 1] = sin(Float(i) * 0.1) * 0.5
+        }
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("test.wav")
+        try? FileManager.default.removeItem(at: url)
+        try WavWriter.writeStereoPCM16(samples: samples, sampleRate: 48000, to: url)
+
+        let data = try Data(contentsOf: url)
+        XCTAssertGreaterThan(data.count, 44)
+        XCTAssertEqual(String(data: data.prefix(4), encoding: .utf8), "RIFF")
+        XCTAssertEqual(String(data: data[8 ..< 12], encoding: .utf8), "WAVE")
+        XCTAssertEqual(String(data: data[12 ..< 16], encoding: .utf8), "fmt ")
+        try? FileManager.default.removeItem(at: url)
+    }
+
     @MainActor
     func testSequencerEngineDelegateReceivesNoteEvents() {
         final class Spy: SequencerEngineDelegate {

@@ -1,7 +1,10 @@
+import ChipsCore
 import ChipsUIKit
 import UIKit
 
 final class SettingsSectionViewController: UIViewController {
+    private let coordinator: AudioCoordinator
+
     private let newButton = ChipsButton()
     private let saveButton = ChipsButton()
     private let loadButton = ChipsButton()
@@ -13,12 +16,24 @@ final class SettingsSectionViewController: UIViewController {
     private let mainTrackButton = ChipsButton()
     private let stemsButton = ChipsButton()
 
+    init(coordinator: AudioCoordinator) {
+        self.coordinator = coordinator
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("SettingsSectionViewController no soporta NSCoder")
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = ChipsTheme.contentBackground
         configureButtons()
         configureFields()
         layoutContent()
+        wireActions()
+        tempoField.text = String(Int(coordinator.transport.tempoBpm))
     }
 
     private func configureButtons() {
@@ -26,7 +41,7 @@ final class SettingsSectionViewController: UIViewController {
         saveButton.title = "SAVE"
         loadButton.title = "LOAD"
         tapTempoButton.title = "TAP TEMPO"
-        formatButton.title = "MP3"
+        formatButton.title = "WAV"
         mainTrackButton.title = "MASTER TRACK"
         stemsButton.title = "STEMS"
     }
@@ -34,8 +49,15 @@ final class SettingsSectionViewController: UIViewController {
     private func configureFields() {
         projectName.placeholder = "Untitled"
         author.placeholder = "—"
-        tempoField.text = "120"
         tempoField.alignment = .center
+    }
+
+    private func wireActions() {
+        newButton.addTarget(self, action: #selector(newTapped), for: .touchUpInside)
+        saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
+        loadButton.addTarget(self, action: #selector(loadTapped), for: .touchUpInside)
+        mainTrackButton.addTarget(self, action: #selector(exportMainTrackTapped), for: .touchUpInside)
+        stemsButton.addTarget(self, action: #selector(stemsTapped), for: .touchUpInside)
     }
 
     private func layoutContent() {
@@ -132,5 +154,86 @@ final class SettingsSectionViewController: UIViewController {
         label.font = ChipsTheme.Font.body(size: 13, weight: .medium)
         label.textColor = ChipsTheme.textPrimary
         return label
+    }
+
+    // MARK: Acciones
+
+    @objc private func newTapped() {
+        coordinator.apply(snapshot: ProjectSnapshot())
+        projectName.text = ""
+        author.text = ""
+        tempoField.text = "120"
+        showAlert(title: "Nuevo proyecto", message: "Se aplicaron los defaults.")
+    }
+
+    @objc private func saveTapped() {
+        let name = (projectName.text?.isEmpty == false) ? projectName.text! : "Untitled"
+        let snapshot = coordinator.captureSnapshot(name: name, author: author.text ?? "")
+        do {
+            let data = try ProjectStorage.encode(snapshot)
+            let url = documentsDirectory().appendingPathComponent("\(name).\(ProjectStorage.fileExtension)")
+            try data.write(to: url, options: .atomic)
+            showAlert(title: "Proyecto guardado", message: url.lastPathComponent)
+        } catch {
+            showAlert(title: "Error al guardar", message: "\(error)")
+        }
+    }
+
+    @objc private func loadTapped() {
+        let urls = (try? FileManager.default.contentsOfDirectory(
+            at: documentsDirectory(),
+            includingPropertiesForKeys: nil
+        )) ?? []
+        let chipsFiles = urls.filter { $0.pathExtension == ProjectStorage.fileExtension }
+        guard !chipsFiles.isEmpty else {
+            showAlert(title: "Sin proyectos", message: "No hay archivos .\(ProjectStorage.fileExtension) guardados.")
+            return
+        }
+        let alert = UIAlertController(title: "Cargar proyecto", message: nil, preferredStyle: .actionSheet)
+        for url in chipsFiles {
+            alert.addAction(UIAlertAction(title: url.lastPathComponent, style: .default) { [weak self] _ in
+                self?.loadProject(from: url)
+            })
+        }
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        present(alert, animated: true)
+    }
+
+    private func loadProject(from url: URL) {
+        do {
+            let data = try Data(contentsOf: url)
+            let snapshot = try ProjectStorage.decode(data)
+            coordinator.apply(snapshot: snapshot)
+            projectName.text = snapshot.name
+            author.text = snapshot.author
+            tempoField.text = String(Int(snapshot.tempoBpm))
+        } catch {
+            showAlert(title: "Error al cargar", message: "\(error)")
+        }
+    }
+
+    @objc private func exportMainTrackTapped() {
+        let name = (projectName.text?.isEmpty == false) ? projectName.text! : "main"
+        let url = documentsDirectory().appendingPathComponent("\(name).wav")
+        do {
+            try coordinator.exportWav(to: url, seconds: 8)
+            showAlert(title: "Main track exportado", message: "\(url.lastPathComponent) (8 s, 16-bit)")
+        } catch {
+            showAlert(title: "Error al exportar", message: "\(error)")
+        }
+    }
+
+    @objc private func stemsTapped() {
+        showAlert(title: "Stems", message: "Pendiente de M7.5 (export por canal del mixer).")
+    }
+
+    private func documentsDirectory() -> URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

@@ -5,6 +5,31 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M7 — Persistencia + Export WAV (en curso)
+- ChipsCore: `ProjectSnapshot` Codable con `schemaVersion=1`. Captura
+  nombre, autor, tempo, tracks (incluyendo patterns), settings de synth,
+  mixer (4 canales), delay y reverb. `SynthSettings` /
+  `MixerChannelSettings` / `DelaySettings` / `ReverbSettings` con defaults.
+- ChipsCore: `ProjectStorage` (encode/decode JSON) + rechazo de schemas
+  futuros desconocidos.
+- ChipsCore: `WavWriter.writeStereoPCM16` — escribe RIFF/WAVE PCM
+  16-bit stereo con clamping y conversión float→int16.
+- `AudioCoordinator`: trackea `lastSynthSettings` / `lastMixerSettings` /
+  `lastDelaySettings` / `lastReverbSettings` en cada setter para poder
+  serializar sin leer el engine. `captureSnapshot(name:author:)`,
+  `apply(snapshot:)`, `exportWav(to:seconds:)`.
+- Sección Settings cableada:
+  - **NEW** aplica un snapshot por defecto.
+  - **SAVE** escribe a `Documents/<name>.chips` (JSON).
+  - **LOAD** muestra un action sheet con los `.chips` guardados.
+  - **MASTER TRACK** exporta 8 s a `Documents/<name>.wav` (16-bit
+    stereo, 48 kHz).
+  - STEMS → alert "pendiente M7.5".
+- `Info.plist`: `UIFileSharingEnabled` + `LSSupportsOpeningDocumentsInPlace`
+  para que la carpeta Documents sea accesible desde la app Files.
+- Tests: ProjectSnapshot Codable round-trip, rechazo de schema 999, WAV
+  header válido (RIFF/WAVE/fmt).
+
 ### M6 — Mixer + Delay + Reverb (en curso)
 - C++ `MixerModule`: 4 canales stereo (8 inputs), gain/pan/mute por canal,
   suma a master stereo. ParamId codifica `(channel << 8) | kind`.
