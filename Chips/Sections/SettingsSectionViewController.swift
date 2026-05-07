@@ -3,7 +3,7 @@ import ChipsUIKit
 import UIKit
 
 final class SettingsSectionViewController: UIViewController {
-    private let coordinator: AudioCoordinator
+    private let controller: ProjectController
 
     private let newButton = ChipsButton()
     private let saveButton = ChipsButton()
@@ -16,8 +16,8 @@ final class SettingsSectionViewController: UIViewController {
     private let mainTrackButton = ChipsButton()
     private let stemsButton = ChipsButton()
 
-    init(coordinator: AudioCoordinator) {
-        self.coordinator = coordinator
+    init(controller: ProjectController) {
+        self.controller = controller
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -33,7 +33,9 @@ final class SettingsSectionViewController: UIViewController {
         configureFields()
         layoutContent()
         wireActions()
-        tempoField.text = String(Int(coordinator.transport.tempoBpm))
+        projectName.text = controller.graph.name == "Untitled" ? "" : controller.graph.name
+        author.text = controller.graph.author
+        tempoField.text = String(Int(controller.transport.tempoBpm))
     }
 
     private func configureButtons() {
@@ -159,18 +161,22 @@ final class SettingsSectionViewController: UIViewController {
     // MARK: Acciones
 
     @objc private func newTapped() {
-        coordinator.apply(snapshot: ProjectSnapshot())
-        projectName.text = ""
-        author.text = ""
-        tempoField.text = "120"
-        showAlert(title: "Nuevo proyecto", message: "Se aplicaron los defaults.")
+        do {
+            try controller.apply(graph: ProjectController.defaultGraph())
+            projectName.text = ""
+            author.text = ""
+            tempoField.text = "120"
+            showAlert(title: "Nuevo proyecto", message: "Se aplicaron los defaults.")
+        } catch {
+            showAlert(title: "Error", message: "\(error)")
+        }
     }
 
     @objc private func saveTapped() {
         let name = (projectName.text?.isEmpty == false) ? projectName.text! : "Untitled"
-        let snapshot = coordinator.captureSnapshot(name: name, author: author.text ?? "")
+        let graph = controller.currentGraph(name: name, author: author.text ?? "")
         do {
-            let data = try ProjectStorage.encode(snapshot)
+            let data = try ProjectStorage.encode(graph)
             let url = documentsDirectory().appendingPathComponent("\(name).\(ProjectStorage.fileExtension)")
             try data.write(to: url, options: .atomic)
             showAlert(title: "Proyecto guardado", message: url.lastPathComponent)
@@ -202,11 +208,11 @@ final class SettingsSectionViewController: UIViewController {
     private func loadProject(from url: URL) {
         do {
             let data = try Data(contentsOf: url)
-            let snapshot = try ProjectStorage.decode(data)
-            coordinator.apply(snapshot: snapshot)
-            projectName.text = snapshot.name
-            author.text = snapshot.author
-            tempoField.text = String(Int(snapshot.tempoBpm))
+            let graph = try ProjectStorage.decodeProject(data)
+            try controller.apply(graph: graph)
+            projectName.text = graph.name
+            author.text = graph.author
+            tempoField.text = String(Int(graph.tempoBpm))
         } catch {
             showAlert(title: "Error al cargar", message: "\(error)")
         }
@@ -216,7 +222,7 @@ final class SettingsSectionViewController: UIViewController {
         let name = (projectName.text?.isEmpty == false) ? projectName.text! : "main"
         let url = documentsDirectory().appendingPathComponent("\(name).wav")
         do {
-            try coordinator.exportWav(to: url, seconds: 8)
+            try controller.exportWav(to: url, seconds: 8)
             showAlert(title: "Main track exportado", message: "\(url.lastPathComponent) (8 s, 16-bit)")
         } catch {
             showAlert(title: "Error al exportar", message: "\(error)")
@@ -224,7 +230,7 @@ final class SettingsSectionViewController: UIViewController {
     }
 
     @objc private func stemsTapped() {
-        showAlert(title: "Stems", message: "Pendiente de M7.5 (export por canal del mixer).")
+        showAlert(title: "Stems", message: "Pendiente (export por canal del mixer).")
     }
 
     private func documentsDirectory() -> URL {

@@ -3,17 +3,17 @@ import ChipsUIKit
 import UIKit
 
 final class GridSectionViewController: UIViewController {
-    private let coordinator: AudioCoordinator
+    private let controller: ProjectController
     private let stepCount = 16
     private let trackCount = 6
     private let stepsPerBeat = 4
     private let ticksPerStep: Int64
 
     private var tracks: [Track] = []
-    private var stepButtons: [[UIButton]] = [] // [trackIndex][stepIndex]
+    private var stepButtons: [[UIButton]] = []
 
-    init(coordinator: AudioCoordinator) {
-        self.coordinator = coordinator
+    init(controller: ProjectController) {
+        self.controller = controller
         ticksPerStep = Int64(ChipsCore.ppq / stepsPerBeat)
         super.init(nibName: nil, bundle: nil)
     }
@@ -27,25 +27,36 @@ final class GridSectionViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = ChipsTheme.contentBackground
 
-        // Inicializar tracks vacíos con las notas base C3, D3, E3, F3, G3, A3.
         let basePitches: [UInt8] = [60, 62, 64, 65, 67, 69]
         let patternLength = Int64(stepCount) * ticksPerStep
-        tracks = (0 ..< trackCount).map { idx in
-            let trackName = "T\(idx + 1)"
-            let pattern = Pattern(name: trackName, lengthTicks: patternLength)
-            return Track(name: "\(trackName) (\(basePitches[idx]))", colorIndex: idx, patterns: [pattern])
+        let synthRef = controller.synthRef
+        // Si ya hay tracks en el grafo (proyecto cargado), respétalos.
+        // Si no, crea 6 tracks por defecto enrutados al synth.
+        if controller.graph.tracks.isEmpty {
+            tracks = (0 ..< trackCount).map { idx in
+                let trackName = "T\(idx + 1)"
+                let pattern = Pattern(name: trackName, lengthTicks: patternLength)
+                return Track(
+                    name: "\(trackName) (\(basePitches[idx]))",
+                    colorIndex: idx,
+                    patterns: [pattern],
+                    instrumentRef: synthRef
+                )
+            }
+            controller.setTracks(tracks)
+        } else {
+            tracks = Array(controller.graph.tracks.prefix(trackCount))
         }
 
         layoutGrid()
-        coordinator.sequencer.setTracks(tracks)
-        coordinator.onTickChange = { [weak self] tick in
+        controller.onTickChange = { [weak self] tick in
             self?.highlightCurrentStep(tick: tick)
         }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        coordinator.onTickChange = nil
+        controller.onTickChange = nil
     }
 
     private func layoutGrid() {
@@ -74,7 +85,7 @@ final class GridSectionViewController: UIViewController {
         row.distribution = .fill
 
         let label = UILabel()
-        label.text = tracks[trackIdx].name
+        label.text = trackIdx < tracks.count ? tracks[trackIdx].name : "T\(trackIdx + 1)"
         label.font = ChipsTheme.Font.mono(size: 11, weight: .semibold)
         label.textColor = ChipsTheme.textPrimary
         label.textAlignment = .center
@@ -99,7 +110,9 @@ final class GridSectionViewController: UIViewController {
     private func makeStepButton(trackIdx: Int, stepIdx: Int) -> UIButton {
         let button = UIButton(type: .custom)
         button.tag = trackIdx * 1000 + stepIdx
-        button.backgroundColor = ChipsTheme.buttonGray
+        button.backgroundColor = isStepActive(trackIdx: trackIdx, stepIdx: stepIdx)
+            ? ChipsTheme.trackColor(at: trackIdx)
+            : ChipsTheme.buttonGray
         button.layer.borderWidth = 1
         button.layer.borderColor = ChipsTheme.buttonStroke.cgColor
         button.translatesAutoresizingMaskIntoConstraints = false
@@ -129,7 +142,7 @@ final class GridSectionViewController: UIViewController {
             sender.backgroundColor = ChipsTheme.trackColor(at: trackIdx)
         }
         tracks[trackIdx].patterns[0] = pattern
-        coordinator.sequencer.updateTrack(tracks[trackIdx])
+        controller.updateTrack(tracks[trackIdx])
     }
 
     private func highlightCurrentStep(tick: Int64) {

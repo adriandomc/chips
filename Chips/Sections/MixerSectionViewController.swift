@@ -1,15 +1,16 @@
+import ChipsCore
 import ChipsUIKit
 import UIKit
 
 final class MixerSectionViewController: UIViewController {
-    private let coordinator: AudioCoordinator
-    /// Solo los primeros `kMaxChannels` (4) están cableados al mixer real;
-    /// el resto son visuales hasta que ampliemos MixerModule.
+    private let controller: ProjectController
     private let visibleStripCount = 10
+    /// Solo los primeros 4 strips están cableados al MixerModule (kMaxChannels=4).
+    /// Los strips 5–10 son visuales hasta que MixerModule sea paramétrico (R4).
     private let wiredChannelCount = 4
 
-    init(coordinator: AudioCoordinator) {
-        self.coordinator = coordinator
+    init(controller: ProjectController) {
+        self.controller = controller
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -38,7 +39,7 @@ final class MixerSectionViewController: UIViewController {
             let isWired = i < wiredChannelCount
             let strip = ChannelStripView(
                 label: "Track \(i + 1)",
-                coordinator: isWired ? coordinator : nil,
+                controller: isWired ? controller : nil,
                 channelIndex: isWired ? i : nil
             )
             row.addArrangedSubview(strip)
@@ -62,14 +63,14 @@ final class MixerSectionViewController: UIViewController {
 
 private final class ChannelStripView: UIView {
     private let strokeRight = CALayer()
-    private weak var coordinator: AudioCoordinator?
+    private weak var controller: ProjectController?
     private let channelIndex: Int?
     private let fader = ChipsFader()
     private let panKnob = ChipsKnob()
     private let muteButton = ChipsButton()
 
-    init(label: String, coordinator: AudioCoordinator?, channelIndex: Int?) {
-        self.coordinator = coordinator
+    init(label: String, controller: ProjectController?, channelIndex: Int?) {
+        self.controller = controller
         self.channelIndex = channelIndex
         super.init(frame: .zero)
         backgroundColor = ChipsTheme.contentBackground
@@ -108,12 +109,12 @@ private final class ChannelStripView: UIView {
         let eqBox = makeEqBox()
         let sendsRow = makeSendsRow()
         let sendsLabel = makeSendsLabel()
-        fader.value = 0.8
+        fader.value = initialGain()
 
         panKnob.label = "Pan"
         panKnob.minValue = -1
         panKnob.maxValue = 1
-        panKnob.value = 0
+        panKnob.value = initialPan()
 
         let soloButton = makeSmallButton(title: "S")
         muteButton.title = "M"
@@ -138,6 +139,16 @@ private final class ChannelStripView: UIView {
         panKnob.heightAnchor.constraint(equalToConstant: 60).isActive = true
         msRow.heightAnchor.constraint(equalToConstant: 22).isActive = true
         return stack
+    }
+
+    private func initialGain() -> Float {
+        guard let controller, let idx = channelIndex, let mixer = controller.mixerRef else { return 0.8 }
+        return controller.parameter(of: mixer, name: "ch\(idx)_gain") ?? 0.8
+    }
+
+    private func initialPan() -> Float {
+        guard let controller, let idx = channelIndex, let mixer = controller.mixerRef else { return 0 }
+        return controller.parameter(of: mixer, name: "ch\(idx)_pan") ?? 0
     }
 
     private func makeTitleLabel(_ text: String) -> UILabel {
@@ -204,18 +215,18 @@ private final class ChannelStripView: UIView {
     }
 
     @objc private func faderChanged() {
-        guard let coordinator, let idx = channelIndex else { return }
-        coordinator.setMixerGain(channel: idx, gain: fader.value)
+        guard let controller, let idx = channelIndex, let mixer = controller.mixerRef else { return }
+        controller.setParameter(of: mixer, paramName: "ch\(idx)_gain", value: fader.value)
     }
 
     @objc private func panChanged() {
-        guard let coordinator, let idx = channelIndex else { return }
-        coordinator.setMixerPan(channel: idx, pan: panKnob.value)
+        guard let controller, let idx = channelIndex, let mixer = controller.mixerRef else { return }
+        controller.setParameter(of: mixer, paramName: "ch\(idx)_pan", value: panKnob.value)
     }
 
     @objc private func muteTapped() {
-        guard let coordinator, let idx = channelIndex else { return }
+        guard let controller, let idx = channelIndex, let mixer = controller.mixerRef else { return }
         muteButton.isSelected.toggle()
-        coordinator.setMixerMuted(channel: idx, muted: muteButton.isSelected)
+        controller.setParameter(of: mixer, paramName: "ch\(idx)_mute", value: muteButton.isSelected ? 1 : 0)
     }
 }

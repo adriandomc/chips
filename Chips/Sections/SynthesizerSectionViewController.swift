@@ -1,8 +1,10 @@
+import ChipsCore
 import ChipsUIKit
 import UIKit
 
 final class SynthesizerSectionViewController: UIViewController {
-    private let coordinator: AudioCoordinator
+    private let controller: ProjectController
+    private let synthRef: NodeRef?
     private let panel = UIView()
     private let keyboard = ChipsPianoKeyboard()
 
@@ -17,8 +19,9 @@ final class SynthesizerSectionViewController: UIViewController {
     private let fineTuneKnob = ChipsKnob()
     private let subOscKnob = ChipsKnob()
 
-    init(coordinator: AudioCoordinator) {
-        self.coordinator = coordinator
+    init(controller: ProjectController) {
+        self.controller = controller
+        synthRef = controller.synthRef
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -85,45 +88,44 @@ final class SynthesizerSectionViewController: UIViewController {
             keyboard.heightAnchor.constraint(equalToConstant: 140),
         ])
         keyboard.onNoteOn = { [weak self] midi in
-            self?.coordinator.noteOn(midi)
+            guard let self, let ref = synthRef else { return }
+            controller.sendNoteOn(ref, midi: midi, velocity: 1.0)
         }
         keyboard.onNoteOff = { [weak self] midi in
-            self?.coordinator.noteOff(midi)
+            guard let self, let ref = synthRef else { return }
+            controller.sendNoteOff(ref, midi: midi)
         }
     }
 
     private func configureKnobBindings() {
-        // Volumen (0..1, default 0.5).
         volumeKnob.minValue = 0
         volumeKnob.maxValue = 1
-        volumeKnob.value = 0.5
+        volumeKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "volume") ?? 0.5
         volumeKnob.addTarget(self, action: #selector(volumeChanged), for: .valueChanged)
 
-        // Envelope ADSR.
         attackKnob.minValue = 0.001
         attackKnob.maxValue = 2.0
-        attackKnob.value = 0.01
+        attackKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "attack") ?? 0.01
         attackKnob.addTarget(self, action: #selector(attackChanged), for: .valueChanged)
 
         decayKnob.minValue = 0.001
         decayKnob.maxValue = 2.0
-        decayKnob.value = 0.15
+        decayKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "decay") ?? 0.15
         decayKnob.addTarget(self, action: #selector(decayChanged), for: .valueChanged)
 
         sustainKnob.minValue = 0
         sustainKnob.maxValue = 1
-        sustainKnob.value = 0.7
+        sustainKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "sustain") ?? 0.7
         sustainKnob.addTarget(self, action: #selector(sustainChanged), for: .valueChanged)
 
         releaseKnob.minValue = 0.001
         releaseKnob.maxValue = 4.0
-        releaseKnob.value = 0.4
+        releaseKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "release") ?? 0.4
         releaseKnob.addTarget(self, action: #selector(releaseChanged), for: .valueChanged)
 
-        // Tilt (controla la riqueza armónica del banco aditivo).
         tiltKnob.minValue = 0
         tiltKnob.maxValue = 1
-        tiltKnob.value = 0.5
+        tiltKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "tilt") ?? 0.5
         tiltKnob.addTarget(self, action: #selector(tiltChanged), for: .valueChanged)
     }
 
@@ -142,27 +144,32 @@ final class SynthesizerSectionViewController: UIViewController {
         return row
     }
 
+    private func setSynthParameter(_ name: String, value: Float) {
+        guard let ref = synthRef else { return }
+        controller.setParameter(of: ref, paramName: name, value: value)
+    }
+
     @objc private func volumeChanged() {
-        coordinator.setVolume(volumeKnob.value)
+        setSynthParameter("volume", value: volumeKnob.value)
     }
 
     @objc private func attackChanged() {
-        coordinator.setAttack(attackKnob.value)
+        setSynthParameter("attack", value: attackKnob.value)
     }
 
     @objc private func decayChanged() {
-        coordinator.setDecay(decayKnob.value)
+        setSynthParameter("decay", value: decayKnob.value)
     }
 
     @objc private func sustainChanged() {
-        coordinator.setSustain(sustainKnob.value)
+        setSynthParameter("sustain", value: sustainKnob.value)
     }
 
     @objc private func releaseChanged() {
-        coordinator.setRelease(releaseKnob.value)
+        setSynthParameter("release", value: releaseKnob.value)
     }
 
     @objc private func tiltChanged() {
-        coordinator.setTilt(tiltKnob.value)
+        setSynthParameter("tilt", value: tiltKnob.value)
     }
 }

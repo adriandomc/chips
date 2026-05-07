@@ -10,10 +10,10 @@ final class AppShellViewController: UIViewController {
     private var currentChild: UIViewController?
     private var currentSection: AppSection = .sequencer
 
-    private let coordinator: AudioCoordinator
+    private let coordinator: ProjectController
 
-    init(coordinator: AudioCoordinator) {
-        self.coordinator = coordinator
+    init(controller: ProjectController) {
+        self.coordinator = controller
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -73,10 +73,10 @@ final class AppShellViewController: UIViewController {
         sidebar.setSelected(section)
         let newChild: UIViewController = switch section {
         case .sequencer: SequencerSectionViewController()
-        case .mixer: MixerSectionViewController(coordinator: coordinator)
-        case .synthesizer: SynthesizerSectionViewController(coordinator: coordinator)
-        case .grid: GridSectionViewController(coordinator: coordinator)
-        case .settings: SettingsSectionViewController(coordinator: coordinator)
+        case .mixer: MixerSectionViewController(controller: coordinator)
+        case .synthesizer: SynthesizerSectionViewController(controller: coordinator)
+        case .grid: GridSectionViewController(controller: coordinator)
+        case .settings: SettingsSectionViewController(controller: coordinator)
         case .help: HelpSectionViewController()
         }
         replaceContent(with: newChild)
