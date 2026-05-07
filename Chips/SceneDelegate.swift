@@ -16,12 +16,33 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         do {
             let projectController = try ProjectController(graph: ProjectController.defaultGraph())
             controller = projectController
-            window.rootViewController = AppShellViewController(controller: projectController)
+            if OnboardingState.hasCompleted {
+                window.rootViewController = AppShellViewController(controller: projectController)
+            } else {
+                let onboarding = OnboardingViewController()
+                onboarding.onComplete = { [weak window, weak self] in
+                    guard let window, let self else { return }
+                    let shell = AppShellViewController(controller: projectController)
+                    self.crossFade(window: window, to: shell)
+                }
+                window.rootViewController = onboarding
+            }
         } catch {
             window.rootViewController = ErrorViewController(message: "Audio engine init failed: \(error)")
         }
         window.makeKeyAndVisible()
         self.window = window
+    }
+
+    private func crossFade(window: UIWindow, to viewController: UIViewController) {
+        UIView.transition(
+            with: window,
+            duration: 0.3,
+            options: .transitionCrossDissolve,
+            animations: {
+                window.rootViewController = viewController
+            }
+        )
     }
 }
 

@@ -5,6 +5,41 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-B — Onboarding mínimo (4 páginas) al primer launch
+- `Chips/Sections/OnboardingPage.swift`: enum con 4 páginas (Welcome,
+  Sequence, Sound design, Ship it). Copy corto y declarativo; en inglés
+  hasta la PR de i18n (M11-C).
+- `Chips/Sections/OnboardingIconView.swift`: vista que dibuja un glifo
+  geométrico distinto por página, todo via `CGContext` (sin SF Symbols
+  ni emojis). Welcome = 4 tiles de la paleta cálida. Sequencer = grid
+  8×4 con notas activas. Sound design = knob grande con marcas y
+  indicador cyan. Export = onda + flecha verde.
+- `Chips/Sections/OnboardingViewController.swift`: host `@MainActor`
+  con cross-fade entre páginas, dots de página, botones SKIP / NEXT /
+  GET STARTED. Diseño consistente: `contentBackground`, mono para
+  títulos, body para subtítulo, dots con `panelStroke`.
+- `Chips/Shell/OnboardingState.swift`: gate persistido en `UserDefaults`
+  (`com.adriandomc.chips.onboarding.completedVersion`). Versionado por
+  entero — bumpear en el futuro re-muestra el onboarding a usuarios
+  existentes (útil cuando añadamos features post-1.0).
+- `SceneDelegate`: si `OnboardingState.hasCompleted == false`, presenta
+  `OnboardingViewController` como rootViewController; al completar,
+  cross-fade al `AppShellViewController`. Si el motor de audio falla,
+  el `ErrorViewController` se muestra incondicionalmente.
+- `PrivacyInfo.xcprivacy`: añade `NSPrivacyAccessedAPICategoryUserDefaults`
+  con razón `CA92.1` por persistir el flag del onboarding (App Review
+  exige declarar el uso de UserDefaults).
+- Tests:
+  - `testOnboardingStateRoundTrip`: mark/reset altera `hasCompleted`.
+  - `testOnboardingPagesHaveContent`: 4 páginas con title/subtitle no vacíos.
+  - `testOnboardingViewControllerCompletesOnLastPage`: tap NEXT × 4
+    avanza páginas y dispara `onComplete` + persiste `hasCompleted`.
+  - `testOnboardingSkipMarksCompleted`: tap SKIP completa inmediatamente.
+  - `testPrivacyManifestDeclaresUserDefaultsReason`: verifica el reason
+    en el bundle.
+
+Stack: M11-B basado sobre M11-A. Mergear M11-A primero.
+
 ### M11-A — Privacy manifest + StoreKit 2 scaffold + About screen
 - `Chips/PrivacyInfo.xcprivacy`: declara `NSPrivacyAccessedAPICategorySystemBootTime`
   con razón `35F9.1` por usar `CACurrentMediaTime()` en `SequencerEngine`
