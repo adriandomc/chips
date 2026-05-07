@@ -5,6 +5,38 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### R4 — Modular foundation: UI generadora + Mixer paramétrico (cierra fundación)
+- C++ `MixerModule` paramétrico: `MixerModule(int numChannels = 8)`. Storage
+  `std::vector<Channel>` y `std::vector<ParamSpec>` con nombres en un
+  `std::vector<std::string>` reservado a la capacidad final (los `c_str()`
+  no se invalidan). `kMaxChannels = 64` como techo razonable. Default
+  factory pasa de 4 a 8 canales — concuerda con el mockup.
+- Swift: `InstrumentUIRegistry` MainActor-aislado: `register(typeId:builder:)`,
+  `makePanel(typeId:ref:controller:)`. Si no hay builder, devuelve
+  `GenericInstrumentPanelViewController` que itera los `ParameterSpec` del
+  módulo y crea un knob por cada uno (cualquier módulo es **utilizable
+  inmediatamente** sin escribir UI específica).
+- `InstrumentUIRegistry.registerBuiltins()` registra el panel custom del
+  AdditiveSynth (`SynthesizerSectionViewController`). Llamado al boot
+  desde `SceneDelegate`. Cualquier nuevo módulo que llegue puede registrar
+  su builder en su propio init/init de plugin.
+- `MixerSectionViewController` consulta `numChannels` real al MixerModule
+  en runtime (vía `parameterCount/3`). Pinta tantos channel strips como
+  canales reales tenga el nodo. Ya no hay strips "visuales no cableados".
+- Tests:
+  - Mixer default expone 24 specs (8 canales × 3 params).
+  - InstrumentUIRegistry fallback a panel genérico para tipos no registrados.
+  - InstrumentUIRegistry usa builder registrado cuando existe.
+  - Controller expone numChannels correcto al consumir el mixer.
+
+**Cierra la fundación modular.** Tras R4, añadir un BeatBox es:
+
+1. `Packages/ChipsEngine/Sources/ChipsEngineCxx/src/BeatBox.{hpp,cpp}` — DSP RT-safe + ParamSpecs + auto-registro en ModuleRegistry.
+2. (Opcional) `Chips/Sections/BeatBoxPanelViewController.swift` — panel custom; si no, se usa el genérico con knobs auto-generados.
+3. (Opcional) Registrar el builder en `InstrumentUIRegistry.registerBuiltins()`.
+
+**Sin tocar el coordinator, el snapshot, el motor ni la app shell.** El instrumento es plug-and-play.
+
 ### R3 — Modular foundation: ProjectController reemplaza AudioCoordinator (en curso)
 - `AudioCoordinator` eliminado. Sustituido por `ProjectController`
   (`Chips/Shell/ProjectController.swift`), MainActor-aislado, dueño del

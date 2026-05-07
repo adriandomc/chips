@@ -348,17 +348,20 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertNil(engine.parameterSpec(of: pt, at: 0))
     }
 
-    func testMixerExposesTwelveParametersAcrossFourChannels() throws {
+    func testMixerDefaultExposesEightChannels() throws {
+        // R4: MixerModule paramétrico. Default factory crea con 8 canales.
+        // 8 ch × 3 params (gain/pan/mute) = 24 specs.
         let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
         guard let mixer = engine.addNode(.mixer) else {
             XCTFail("addNode")
             return
         }
-        XCTAssertEqual(engine.parameterCount(of: mixer), 12)
+        XCTAssertEqual(engine.parameterCount(of: mixer), 24)
         let specs = engine.parameterSpecs(of: mixer)
-        XCTAssertEqual(specs.count, 12)
+        XCTAssertEqual(specs.count, 24)
         XCTAssertTrue(specs.contains { $0.name == "ch0_gain" })
-        XCTAssertTrue(specs.contains { $0.name == "ch3_mute" })
+        XCTAssertTrue(specs.contains { $0.name == "ch7_mute" })
+        XCTAssertFalse(specs.contains { $0.name == "ch8_gain" })
     }
 
     func testRemoveAndRebuildGraph() throws {
