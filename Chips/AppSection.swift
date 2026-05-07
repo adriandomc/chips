@@ -21,12 +21,12 @@ enum AppSection: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .sequencer: "Sequencer"
-        case .mixer: "Mixer"
-        case .synthesizer: "Synthesizer"
-        case .grid: "Grid"
-        case .settings: "Settings"
-        case .help: "Help"
+        case .sequencer: String(localized: "section.sequencer")
+        case .mixer: String(localized: "section.mixer")
+        case .synthesizer: String(localized: "section.synthesizer")
+        case .grid: String(localized: "section.grid")
+        case .settings: String(localized: "section.settings")
+        case .help: String(localized: "section.help")
         }
     }
 }

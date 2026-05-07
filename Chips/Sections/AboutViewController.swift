@@ -24,7 +24,7 @@ final class AboutViewController: UIViewController {
     }
 
     private func configureNavigation() {
-        title = "About"
+        title = String(localized: "about.title")
         navigationController?.navigationBar.titleTextAttributes = [
             .font: ChipsTheme.Font.mono(size: 14, weight: .semibold),
             .foregroundColor: ChipsTheme.textPrimary,
@@ -48,9 +48,18 @@ final class AboutViewController: UIViewController {
 
         stack.addArrangedSubview(makeIdentityBlock())
         stack.addArrangedSubview(makeSeparator())
-        stack.addArrangedSubview(makeLegalRow(title: "Privacy Policy", action: #selector(privacyTapped)))
-        stack.addArrangedSubview(makeLegalRow(title: "Terms of Service", action: #selector(termsTapped)))
-        stack.addArrangedSubview(makeLegalRow(title: "Open Source Licenses", action: #selector(licensesTapped)))
+        stack.addArrangedSubview(makeLegalRow(
+            title: String(localized: "about.privacy_policy"),
+            action: #selector(privacyTapped)
+        ))
+        stack.addArrangedSubview(makeLegalRow(
+            title: String(localized: "about.terms"),
+            action: #selector(termsTapped)
+        ))
+        stack.addArrangedSubview(makeLegalRow(
+            title: String(localized: "about.licenses"),
+            action: #selector(licensesTapped)
+        ))
         stack.addArrangedSubview(makeSeparator())
         stack.addArrangedSubview(makeRestoreBlock())
         stack.addArrangedSubview(makeFooter())
@@ -80,13 +89,14 @@ final class AboutViewController: UIViewController {
         nameLabel.font = ChipsTheme.Font.mono(size: 32, weight: .bold)
         nameLabel.textColor = ChipsTheme.textPrimary
 
+        let versionFormat = String(localized: "about.version_format")
         let versionLabel = UILabel()
-        versionLabel.text = "Version \(Self.versionString) (\(Self.buildString))"
+        versionLabel.text = String(format: versionFormat, Self.versionString, Self.buildString)
         versionLabel.font = ChipsTheme.Font.mono(size: 13)
         versionLabel.textColor = ChipsTheme.textSecondary
 
         let descriptionLabel = UILabel()
-        descriptionLabel.text = "Modular DAW para iOS."
+        descriptionLabel.text = String(localized: "about.description")
         descriptionLabel.font = ChipsTheme.Font.body(size: 13)
         descriptionLabel.textColor = ChipsTheme.textSecondary
         descriptionLabel.numberOfLines = 0
@@ -121,17 +131,17 @@ final class AboutViewController: UIViewController {
         container.alignment = .fill
 
         let title = UILabel()
-        title.text = "PURCHASES"
+        title.text = String(localized: "about.purchases_label")
         title.font = ChipsTheme.Font.mono(size: 11, weight: .semibold)
         title.textColor = ChipsTheme.textSecondary
 
-        restoreButton.title = "Restore Purchases"
+        restoreButton.title = String(localized: "about.restore_button")
         restoreButton.contentInsets = .init(top: 10, left: 12, bottom: 10, right: 12)
         restoreButton.titleFont = ChipsTheme.Font.body(size: 14, weight: .medium)
         restoreButton.addTarget(self, action: #selector(restoreTapped), for: .touchUpInside)
 
         let hint = UILabel()
-        hint.text = "Chips es una compra única. Restore re-sincroniza tu cuenta de App Store."
+        hint.text = String(localized: "about.restore_hint")
         hint.font = ChipsTheme.Font.body(size: 11)
         hint.textColor = ChipsTheme.textSecondary
         hint.numberOfLines = 0
@@ -144,7 +154,7 @@ final class AboutViewController: UIViewController {
 
     private func makeFooter() -> UIView {
         let label = UILabel()
-        label.text = "© 2026 Adrián Domingo Carballal."
+        label.text = String(localized: "about.copyright")
         label.font = ChipsTheme.Font.mono(size: 11)
         label.textColor = ChipsTheme.textSecondary
         label.textAlignment = .left
@@ -158,15 +168,15 @@ final class AboutViewController: UIViewController {
     }
 
     @objc private func privacyTapped() {
-        showPlaceholder(title: "Privacy Policy")
+        showPlaceholder(title: String(localized: "about.privacy_policy"))
     }
 
     @objc private func termsTapped() {
-        showPlaceholder(title: "Terms of Service")
+        showPlaceholder(title: String(localized: "about.terms"))
     }
 
     @objc private func licensesTapped() {
-        showPlaceholder(title: "Open Source Licenses")
+        showPlaceholder(title: String(localized: "about.licenses"))
     }
 
     @objc private func restoreTapped() {
@@ -181,20 +191,27 @@ final class AboutViewController: UIViewController {
             }
             do {
                 try await EntitlementManager.shared.restorePurchases()
-                showAlert(title: "Restore", message: "Compras sincronizadas con tu cuenta de App Store.")
+                showAlert(
+                    title: String(localized: "about.restore_title"),
+                    message: String(localized: "about.restore_success")
+                )
             } catch {
-                showAlert(title: "Restore", message: "No se pudo sincronizar: \(error.localizedDescription)")
+                let format = String(localized: "about.restore_error_format")
+                showAlert(
+                    title: String(localized: "about.restore_title"),
+                    message: String(format: format, error.localizedDescription)
+                )
             }
         }
     }
 
     private func showPlaceholder(title: String) {
-        showAlert(title: title, message: "URL pendiente. Se publicará junto con el lanzamiento en App Store.")
+        showAlert(title: title, message: String(localized: "about.placeholder_message"))
     }
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: String(localized: "common.ok"), style: .default))
         present(alert, animated: true)
     }
 

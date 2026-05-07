@@ -42,7 +42,7 @@ private final class TrackRowView: UIView {
         addSubview(labelContainer)
 
         let label = UILabel()
-        label.text = "Track \(index + 1)"
+        label.text = String(format: String(localized: "track.default_name_format"), index + 1)
         label.font = ChipsTheme.Font.body(size: 13, weight: .semibold)
         label.textColor = ChipsTheme.textPrimary
         label.translatesAutoresizingMaskIntoConstraints = false

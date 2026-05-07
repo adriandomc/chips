@@ -104,7 +104,7 @@ final class GenericInstrumentPanelViewController: UIViewController {
 
     private func showEmptyMessage() {
         let label = UILabel()
-        label.text = "Este módulo no expone parámetros."
+        label.text = String(localized: "generic_panel.empty")
         label.font = ChipsTheme.Font.body(size: 13)
         label.textColor = ChipsTheme.textSecondary
         label.translatesAutoresizingMaskIntoConstraints = false

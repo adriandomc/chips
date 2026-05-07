@@ -175,6 +175,64 @@ final class ChipsAppTests: XCTestCase {
         OnboardingState.reset()
     }
 
+    func testLocalizableCatalogHasEnAndEs() throws {
+        // Verifica que el catálogo Localizable.xcstrings está embebido y trae
+        // tanto en como es para todas las claves user-facing. Bloquea regresiones
+        // donde se añade una clave en código pero se olvida traducir.
+        let strings = try Self.localizationCatalogStrings()
+        guard !strings.isEmpty else {
+            // El .xcstrings puede no estar como recurso plano (Xcode lo procesa).
+            // En ese caso confiamos en `testLocalizedKeysResolveAtRuntime`.
+            return
+        }
+        let requiredKeys = [
+            "common.ok", "common.cancel", "common.error",
+            "section.sequencer", "section.mixer", "section.synthesizer",
+            "section.grid", "section.settings", "section.help",
+            "settings.button.new", "settings.button.save", "settings.button.about",
+            "settings.label.tempo", "settings.label.export",
+            "about.title", "about.privacy_policy", "about.terms",
+            "about.restore_button", "about.copyright",
+            "onboarding.button.skip", "onboarding.button.next", "onboarding.button.get_started",
+            "onboarding.welcome.title", "onboarding.welcome.subtitle",
+            "onboarding.export.title", "onboarding.export.subtitle",
+            "mixer.label.pan", "mixer.label.eq", "mixer.track_format",
+            "generic_panel.empty",
+        ]
+        for key in requiredKeys {
+            guard let entry = strings[key] as? [String: Any] else {
+                XCTFail("Falta clave en el catálogo: \(key)")
+                continue
+            }
+            let locs = entry["localizations"] as? [String: Any] ?? [:]
+            XCTAssertNotNil(locs["en"], "[\(key)] sin traducción en")
+            XCTAssertNotNil(locs["es"], "[\(key)] sin traducción es")
+        }
+    }
+
+    func testLocalizedKeysResolveAtRuntime() {
+        // Verifica que String(localized:) devuelve un valor distinto de la
+        // clave — lo que pasaría si el catálogo no estuviera embebido o tuviera
+        // mal el formato y cayera al "key as fallback".
+        XCTAssertNotEqual(String(localized: "section.sequencer"), "section.sequencer")
+        XCTAssertNotEqual(String(localized: "settings.button.new"), "settings.button.new")
+        XCTAssertNotEqual(String(localized: "onboarding.welcome.title"), "onboarding.welcome.title")
+        XCTAssertNotEqual(String(localized: "about.title"), "about.title")
+    }
+
+    private static func localizationCatalogStrings() throws -> [String: Any] {
+        // El .xcstrings puede aparecer como recurso plano si Xcode no lo
+        // procesa (en ciertos build phases). Si está, parseamos el JSON;
+        // si no, devolvemos vacío y confiamos en el test de runtime.
+        guard let url = Bundle.main.url(forResource: "Localizable", withExtension: "xcstrings"),
+              let data = try? Data(contentsOf: url)
+        else {
+            return [:]
+        }
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        return json?["strings"] as? [String: Any] ?? [:]
+    }
+
     private static func privacyManifestAPIs() throws -> [[String: Any]] {
         guard let url = Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy") else {
             throw NSError(
