@@ -5,6 +5,27 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M8 piloto — SubtractiveSynth (prueba del plug-and-play)
+- `Packages/ChipsEngine/Sources/ChipsEngineCxx/src/SubtractiveSynth.{hpp,cpp}`:
+  saw monosynth + biquad LP filter (RBJ cookbook) + ADSR. Implementa
+  `IModule` con typeId `"subtractive_synth"` y 7 parámetros (volume,
+  cutoff, resonance, attack, decay, sustain, release) con units físicas
+  (Hz, s).
+- Auto-registro vía `ModuleRegistry` con `[[gnu::used]]`. `forceLink()`
+  añadido al `touchAllModules()` de `ChipsEngine.cpp`.
+- Tests:
+  - Aparece en `engine.registeredTypes`.
+  - `addNode(typeId: "subtractive_synth")` crea el nodo con 7 specs
+    cuyos nombres son los esperados.
+  - Tras `sendNoteOn(midi: 60)`, el render produce audio con RMS > 0.01.
+- **Sin tocar coordinator, snapshot, UI core ni ProjectController.**
+  La UI sale gratis del `GenericInstrumentPanelViewController` que
+  itera los `ParameterSpec`. Para usarlo desde la app:
+  `controller.addNode(typeId: "subtractive_synth")` — fin.
+
+Esta PR es la demostración concreta de la fundación modular cerrada
+en R1–R4. Total: 3 archivos (hpp, cpp, +1 línea en touchAllModules).
+
 ### M11-D — Accesibilidad VoiceOver para componentes UI custom
 - `ChipsKnob`: `isAccessibilityElement = true`, `traits = .adjustable`,
   `accessibilityLabel` espejea `label`. `accessibilityValue` se formatea
@@ -13,38 +34,16 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
   `accessibilityIncrement()` y `Decrement()` mueven en pasos de
   `accessibilityStepFraction` (default 5% del rango) y disparan
   `.valueChanged` para que el ProjectController escriba el cambio.
-- `ChipsFader`: misma API que `ChipsKnob` — adjustable, formatter
-  opcional, increment/decrement.
+- `ChipsFader`: misma API que `ChipsKnob`.
 - `ChipsButton`: `traits = .button`, `accessibilityLabel` espejea
-  `title`. La app puede sobreescribirlo (e.g. botones M / S del mixer
-  exponen "Mute" / "Solo" en lugar de la letra cruda).
-- `ChipsIconButton`: `traits = .button`. Cuando `isSelected == true`,
-  añade `.selected` a `traits` — VoiceOver lee "Sequencer, selected"
-  para la sección activa de la sidebar.
-- `ChipsTransportButton`: `accessibilityLabel = "Play"` o `"Stop"`
-  según el `kind`. (No usa `bundle: .module` para no requerir setup
-  de resources en el package; la app puede sobreescribir si quiere
-  localizar.)
-- `SidebarView`: cada `ChipsIconButton` recibe `section.title` como
-  label — VoiceOver navega la sidebar leyendo "Sequencer", "Mixer", …
-- `MixerSectionViewController`:
-  - Fader: label "Track N gain", value formateado como porcentaje.
-  - PanKnob: value formateado como "Center" / "Left 30%" / "Right 60%".
-  - M / S buttons: labels explícitos "Mute" / "Solo".
+  `title`. `ChipsIconButton`: `.button` + `.selected` dinámico.
+  `ChipsTransportButton`: defaults Play/Stop.
+- `SidebarView`: cada `ChipsIconButton` recibe `section.title`.
+- `MixerSectionViewController`: faders/knobs con labels y formatters
+  humanos.
 - `GenericInstrumentPanelViewController`: knobs auto-generados usan
-  `spec.unit` en el formatter ("0.50 Hz", "1.20 dB") — refleja la
-  metadata real del DSP.
-- Tests (`Packages/ChipsUIKit/Tests/`):
-  - Knob/Fader: traits, label/value, increment/decrement, clamp,
-    eventos `.valueChanged` se disparan al ajustar via VoiceOver.
-  - Button: label espejea title, trait `.button`.
-  - IconButton: trait `.selected` reflejea isSelected.
-  - TransportButton: defaults Play/Stop.
-
-Sin tocar el AppShell ni el ProjectController. App-side el wireado
-es en MixerSectionViewController y SidebarView. Falta wireado fino
-en SynthesizerSectionViewController (knobs específicos del synth)
-— próximo PR.
+  `spec.unit` en el formatter.
+- Tests: traits adjustable, label/value, increment/decrement, selected.
 
 ### M11-A — Privacy manifest + StoreKit 2 scaffold + About screen
 - `Chips/PrivacyInfo.xcprivacy`: declara `NSPrivacyAccessedAPICategorySystemBootTime`
