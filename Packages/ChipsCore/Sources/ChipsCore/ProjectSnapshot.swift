@@ -148,6 +148,7 @@ public enum ProjectStorage {
     }
 
     // MARK: ProjectSnapshot (v1) — legacy, usado todavía por AudioCoordinator
+
     // hasta que R3 lo reemplace por ProjectController.
 
     public static func encode(_ snapshot: ProjectSnapshot) throws -> Data {
