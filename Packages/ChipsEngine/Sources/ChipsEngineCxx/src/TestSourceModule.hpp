@@ -15,6 +15,9 @@ public:
     explicit TestSourceModule(int period = 64, int channels = 1)
         : period_(period < 1 ? 1 : period), channels_(channels < 1 ? 1 : channels) {}
 
+    static void forceLink();
+
+    const char* typeId() const override { return "test_source"; }
     void prepare(double /*sampleRate*/, int /*maxFrames*/) override { phase_ = 0; }
     void reset() override { phase_ = 0; }
     void handleParameterChange(uint32_t /*paramId*/, float /*value*/) override {}

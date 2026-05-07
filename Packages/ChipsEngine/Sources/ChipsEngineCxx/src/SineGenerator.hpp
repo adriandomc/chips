@@ -20,6 +20,12 @@ public:
 
     SineGenerator() = default;
 
+    /// Llamado desde el manifest de linkage en ChipsEngine.cpp para forzar al
+    /// linker a no descartar este object file (los registros estáticos solo
+    /// corren si el archivo se enlaza). Body vacío a propósito.
+    static void forceLink();
+
+    const char* typeId() const override;
     void prepare(double sampleRate, int maxFrames) override;
     void reset() override;
     void process(const ProcessContext& ctx) override;
@@ -27,6 +33,9 @@ public:
 
     int numAudioInputs() const override { return 0; }
     int numAudioOutputs() const override { return 2; }
+
+    int numParameters() const override;
+    ParamSpec parameterAt(int index) const override;
 
     // Accesores fuera del grafo (control thread; no RT).
     void setFrequency(float hz);

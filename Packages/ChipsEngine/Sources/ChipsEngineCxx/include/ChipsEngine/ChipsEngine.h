@@ -17,7 +17,9 @@ typedef struct ChipsEngineHandle ChipsEngineHandle;
 typedef uint32_t ChipsNodeId;
 #define CHIPS_INVALID_NODE_ID ((ChipsNodeId)0)
 
-// Identificadores de tipo de nodo (estables).
+// Identificadores de tipo de nodo built-in (estables, comparten string con el
+// `ModuleRegistry`). Para listar dinámicamente los tipos disponibles, usar
+// `chips_engine_registered_type_count` / `_at`.
 #define CHIPS_NODE_TYPE_SINE "sine"
 #define CHIPS_NODE_TYPE_PASSTHROUGH "passthrough"
 #define CHIPS_NODE_TYPE_TEST_SOURCE "test_source"
@@ -25,6 +27,18 @@ typedef uint32_t ChipsNodeId;
 #define CHIPS_NODE_TYPE_MIXER "mixer"
 #define CHIPS_NODE_TYPE_DELAY "delay"
 #define CHIPS_NODE_TYPE_REVERB "reverb"
+
+/// Metadata declarativa de un parámetro de un módulo. Permite a la UI generar
+/// controles sin conocer el tipo concreto. `name` y `unit` apuntan a memoria
+/// estática del módulo y son válidos durante toda la vida del proceso.
+typedef struct ChipsParamSpec {
+    uint32_t param_id;
+    const char* name;
+    const char* unit;
+    float min_value;
+    float max_value;
+    float default_value;
+} ChipsParamSpec;
 
 // ---- Engine lifecycle ----
 
@@ -43,33 +57,42 @@ double chips_engine_sample_rate(const ChipsEngineHandle* engine);
 
 // ---- Grafo dinámico ----
 
-/// Añade un nodo del tipo indicado y devuelve su ID. Retorna 0 si falla.
 ChipsNodeId chips_engine_add_node(ChipsEngineHandle* engine, const char* type_id);
-
-/// Elimina un nodo y todas sus conexiones.
 bool chips_engine_remove_node(ChipsEngineHandle* engine, ChipsNodeId node);
-
-/// Conecta src.outPort -> dst.inPort. Un input solo puede tener un origen.
-bool chips_engine_connect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port);
-
-bool chips_engine_disconnect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port);
-
-/// Define el nodo cuya salida (puertos 0,1) se enviará al output del engine.
+bool chips_engine_connect(ChipsEngineHandle* engine,
+                          ChipsNodeId src, int src_port,
+                          ChipsNodeId dst, int dst_port);
+bool chips_engine_disconnect(ChipsEngineHandle* engine,
+                             ChipsNodeId src, int src_port,
+                             ChipsNodeId dst, int dst_port);
 void chips_engine_set_output_node(ChipsEngineHandle* engine, ChipsNodeId node);
-
-/// Compila el grafo: ordena topológicamente, asigna buffers y publica plan
-/// al audio thread vía atomic swap. Devuelve false si hay ciclo o config inválida.
 bool chips_engine_compile(ChipsEngineHandle* engine);
 
-/// Encola un cambio de parámetro (RT-safe vía SPSC). Devuelve false si la cola
-/// está llena. El cambio se aplica antes del próximo render block.
+// ---- Eventos (RT-safe vía SPSC) ----
+
 bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value);
-
-/// Envía un Note On al nodo (instrumento). velocity en [0..1].
 bool chips_engine_send_note_on(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity);
-
-/// Envía un Note Off al nodo.
 bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int midi);
+
+// ---- Introspección de módulos ----
+
+/// Devuelve el typeId del nodo (string estable). NULL si el nodo no existe.
+const char* chips_engine_node_type_id(ChipsEngineHandle* engine, ChipsNodeId node);
+
+/// Número de parámetros expuestos por el módulo. 0 si el nodo no existe o no
+/// declara parámetros (ej. PassthroughModule).
+int chips_engine_node_param_count(ChipsEngineHandle* engine, ChipsNodeId node);
+
+/// Llena `out` con la spec del parámetro `index` del nodo. Devuelve false si
+/// el nodo no existe, el índice está fuera de rango, o `out` es NULL.
+bool chips_engine_node_param_at(ChipsEngineHandle* engine, ChipsNodeId node, int index, ChipsParamSpec* out);
+
+/// Número de tipos registrados en el `ModuleRegistry` capturado al crear el
+/// engine. Estable durante la vida del engine.
+int chips_engine_registered_type_count(ChipsEngineHandle* engine);
+
+/// typeId registrado en el índice dado (0..count-1). NULL si fuera de rango.
+const char* chips_engine_registered_type_at(ChipsEngineHandle* engine, int index);
 
 #ifdef __cplusplus
 }

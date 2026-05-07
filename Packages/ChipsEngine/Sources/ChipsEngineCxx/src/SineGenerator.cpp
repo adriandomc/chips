@@ -2,6 +2,8 @@
 
 #include "SineGenerator.hpp"
 
+#include "ModuleRegistry.hpp"
+
 #include <cmath>
 #include <cstring>
 
@@ -9,7 +11,31 @@ namespace chips {
 
 namespace {
 constexpr double kTwoPi = 6.28318530717958647692;
+
+const ParamSpec kSineParamSpecs[] = {
+    {SineGenerator::ParamFrequency, "frequency", "Hz", 20.0f, 20000.0f, 440.0f},
+    {SineGenerator::ParamEnabled, "enabled", "", 0.0f, 1.0f, 0.0f},
+    {SineGenerator::ParamAmplitude, "amplitude", "", 0.0f, 1.0f, 0.25f},
+};
+
+[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
+    "sine", [] { return std::unique_ptr<IModule>(new SineGenerator()); });
 }  // namespace
+
+void SineGenerator::forceLink() {}
+
+const char* SineGenerator::typeId() const { return "sine"; }
+
+int SineGenerator::numParameters() const {
+    return static_cast<int>(sizeof(kSineParamSpecs) / sizeof(kSineParamSpecs[0]));
+}
+
+ParamSpec SineGenerator::parameterAt(int index) const {
+    if (index < 0 || index >= numParameters()) {
+        return ParamSpec{};
+    }
+    return kSineParamSpecs[index];
+}
 
 void SineGenerator::prepare(double sampleRate, int /*maxFrames*/) {
     sampleRate_ = sampleRate > 0.0 ? sampleRate : 48000.0;

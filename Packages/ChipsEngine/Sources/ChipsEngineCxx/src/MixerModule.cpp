@@ -2,11 +2,49 @@
 
 #include "MixerModule.hpp"
 
+#include "ModuleRegistry.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 
 namespace chips {
+
+namespace {
+// Pre-computed param specs para los kMaxChannels * 3 (gain/pan/mute) parámetros.
+// Strings estáticos por canal — cuando MixerModule sea paramétrico (R4), esto
+// pasará a ser generado dinámicamente en prepare() con un buffer de strings
+// pertenecientes al módulo.
+constexpr int kMixerParamCount = MixerModule::kMaxChannels * 3;
+const ParamSpec kMixerParamSpecs[kMixerParamCount] = {
+    {(0u << 8) | MixerModule::Gain, "ch0_gain", "", 0.0f, 2.0f, 1.0f},
+    {(0u << 8) | MixerModule::Pan, "ch0_pan", "", -1.0f, 1.0f, 0.0f},
+    {(0u << 8) | MixerModule::Mute, "ch0_mute", "", 0.0f, 1.0f, 0.0f},
+    {(1u << 8) | MixerModule::Gain, "ch1_gain", "", 0.0f, 2.0f, 1.0f},
+    {(1u << 8) | MixerModule::Pan, "ch1_pan", "", -1.0f, 1.0f, 0.0f},
+    {(1u << 8) | MixerModule::Mute, "ch1_mute", "", 0.0f, 1.0f, 0.0f},
+    {(2u << 8) | MixerModule::Gain, "ch2_gain", "", 0.0f, 2.0f, 1.0f},
+    {(2u << 8) | MixerModule::Pan, "ch2_pan", "", -1.0f, 1.0f, 0.0f},
+    {(2u << 8) | MixerModule::Mute, "ch2_mute", "", 0.0f, 1.0f, 0.0f},
+    {(3u << 8) | MixerModule::Gain, "ch3_gain", "", 0.0f, 2.0f, 1.0f},
+    {(3u << 8) | MixerModule::Pan, "ch3_pan", "", -1.0f, 1.0f, 0.0f},
+    {(3u << 8) | MixerModule::Mute, "ch3_mute", "", 0.0f, 1.0f, 0.0f},
+};
+
+[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
+    "mixer", [] { return std::unique_ptr<IModule>(new MixerModule()); });
+}  // namespace
+
+void MixerModule::forceLink() {}
+
+int MixerModule::numParameters() const { return kMixerParamCount; }
+
+ParamSpec MixerModule::parameterAt(int index) const {
+    if (index < 0 || index >= kMixerParamCount) {
+        return ParamSpec{};
+    }
+    return kMixerParamSpecs[index];
+}
 
 MixerModule::MixerModule() = default;
 

@@ -184,4 +184,87 @@ public final class ChipsEngine: @unchecked Sendable {
     public func sendNoteOff(_ id: ChipsNodeId, midi: Int) -> Bool {
         chips_engine_send_note_off(handle, id, Int32(midi))
     }
+
+    // MARK: Introspección
+
+    /// Lista de typeIds registrados en el motor en el momento de creación.
+    /// Capturada al construir el `ChipsEngine`; estable durante su vida.
+    public var registeredTypes: [String] {
+        let count = chips_engine_registered_type_count(handle)
+        var result: [String] = []
+        result.reserveCapacity(Int(count))
+        for index in 0 ..< count {
+            if let raw = chips_engine_registered_type_at(handle, index) {
+                result.append(String(cString: raw))
+            }
+        }
+        return result
+    }
+
+    /// Devuelve el typeId del nodo (igual al usado al crearlo). nil si no existe.
+    public func nodeTypeId(_ id: ChipsNodeId) -> String? {
+        guard let raw = chips_engine_node_type_id(handle, id) else {
+            return nil
+        }
+        return String(cString: raw)
+    }
+
+    public func parameterCount(of id: ChipsNodeId) -> Int {
+        Int(chips_engine_node_param_count(handle, id))
+    }
+
+    public func parameterSpec(of id: ChipsNodeId, at index: Int) -> ParameterSpec? {
+        var raw = ChipsParamSpec()
+        guard chips_engine_node_param_at(handle, id, Int32(index), &raw) else {
+            return nil
+        }
+        return ParameterSpec(
+            paramId: raw.param_id,
+            name: raw.name.map { String(cString: $0) } ?? "",
+            unit: raw.unit.map { String(cString: $0) } ?? "",
+            minValue: raw.min_value,
+            maxValue: raw.max_value,
+            defaultValue: raw.default_value
+        )
+    }
+
+    /// Recoge la spec de todos los parámetros del nodo en orden de declaración.
+    public func parameterSpecs(of id: ChipsNodeId) -> [ParameterSpec] {
+        let count = parameterCount(of: id)
+        var specs: [ParameterSpec] = []
+        specs.reserveCapacity(count)
+        for index in 0 ..< count {
+            if let spec = parameterSpec(of: id, at: index) {
+                specs.append(spec)
+            }
+        }
+        return specs
+    }
+}
+
+/// Metadata de un parámetro expuesto por un módulo. Espejo Swift de
+/// `ChipsParamSpec` (la struct C ABI).
+public struct ParameterSpec: Hashable, Sendable {
+    public let paramId: UInt32
+    public let name: String
+    public let unit: String
+    public let minValue: Float
+    public let maxValue: Float
+    public let defaultValue: Float
+
+    public init(
+        paramId: UInt32,
+        name: String,
+        unit: String,
+        minValue: Float,
+        maxValue: Float,
+        defaultValue: Float
+    ) {
+        self.paramId = paramId
+        self.name = name
+        self.unit = unit
+        self.minValue = minValue
+        self.maxValue = maxValue
+        self.defaultValue = defaultValue
+    }
 }

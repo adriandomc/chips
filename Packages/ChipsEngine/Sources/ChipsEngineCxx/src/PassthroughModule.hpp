@@ -13,6 +13,9 @@ class PassthroughModule : public IModule {
 public:
     explicit PassthroughModule(int channels = 1) : channels_(channels < 1 ? 1 : channels) {}
 
+    static void forceLink();
+
+    const char* typeId() const override { return "passthrough"; }
     void prepare(double /*sampleRate*/, int /*maxFrames*/) override {}
     void reset() override {}
     void handleParameterChange(uint32_t /*paramId*/, float /*value*/) override {}

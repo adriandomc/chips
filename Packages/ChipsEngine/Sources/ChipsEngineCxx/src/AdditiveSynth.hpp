@@ -28,6 +28,9 @@ public:
 
     AdditiveSynth();
 
+    static void forceLink();
+
+    const char* typeId() const override { return "additive_synth"; }
     void prepare(double sampleRate, int maxFrames) override;
     void reset() override;
     void process(const ProcessContext& ctx) override;
@@ -37,6 +40,9 @@ public:
 
     int numAudioInputs() const override { return 0; }
     int numAudioOutputs() const override { return 2; }
+
+    int numParameters() const override;
+    ParamSpec parameterAt(int index) const override;
 
 private:
     struct Voice {

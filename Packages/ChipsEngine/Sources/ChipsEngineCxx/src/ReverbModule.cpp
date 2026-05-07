@@ -2,6 +2,8 @@
 
 #include "ReverbModule.hpp"
 
+#include "ModuleRegistry.hpp"
+
 #include <algorithm>
 
 namespace chips {
@@ -10,7 +12,29 @@ namespace {
 // Delays clásicos de Schroeder (en samples a 44.1 kHz). Se escalan a la SR real.
 constexpr int kCombDelays44k[] = {1557, 1617, 1491, 1422};
 constexpr int kAllpassDelays44k[] = {225, 556};
+
+const ParamSpec kReverbParamSpecs[] = {
+    {ReverbModule::ParamRoomSize, "room_size", "", 0.0f, 1.0f, 0.7f},
+    {ReverbModule::ParamDamping, "damping", "", 0.0f, 1.0f, 0.3f},
+    {ReverbModule::ParamWet, "wet", "", 0.0f, 1.0f, 0.2f},
+};
+
+[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
+    "reverb", [] { return std::unique_ptr<IModule>(new ReverbModule()); });
 }  // namespace
+
+void ReverbModule::forceLink() {}
+
+int ReverbModule::numParameters() const {
+    return static_cast<int>(sizeof(kReverbParamSpecs) / sizeof(kReverbParamSpecs[0]));
+}
+
+ParamSpec ReverbModule::parameterAt(int index) const {
+    if (index < 0 || index >= numParameters()) {
+        return ParamSpec{};
+    }
+    return kReverbParamSpecs[index];
+}
 
 float ReverbModule::CombFilter::process(float input) {
     if (buffer.empty()) {

@@ -7,6 +7,7 @@
 #include "DspLoadTracker.hpp"
 #include "Graph.hpp"
 #include "MixerModule.hpp"
+#include "ModuleRegistry.hpp"
 #include "PassthroughModule.hpp"
 #include "ReverbModule.hpp"
 #include "SineGenerator.hpp"
@@ -16,37 +17,36 @@
 #include <memory>
 #include <new>
 #include <string>
+#include <vector>
 
 namespace {
-constexpr const char* kVersion = "0.2.0-m2";
+constexpr const char* kVersion = "0.3.0-r1";
+
+/// Fuerza al linker a incluir los object files de cada módulo. Los registros
+/// estáticos (en cada *Module.cpp) solo corren si el objeto se enlaza; en static
+/// libs (SwiftPM target) los objetos sin símbolos referenciados se descartan.
+/// Llamado una vez al primer create().
+void touchAllModules() {
+    chips::SineGenerator::forceLink();
+    chips::PassthroughModule::forceLink();
+    chips::TestSourceModule::forceLink();
+    chips::AdditiveSynth::forceLink();
+    chips::MixerModule::forceLink();
+    chips::DelayModule::forceLink();
+    chips::ReverbModule::forceLink();
+}
+
+void ensureModulesRegistered() {
+    static const int sentinel = (touchAllModules(), 0);
+    (void)sentinel;
+}
 
 std::unique_ptr<chips::IModule> makeModuleFromTypeId(const char* typeId) {
     if (typeId == nullptr) {
         return nullptr;
     }
-    const std::string id(typeId);
-    if (id == CHIPS_NODE_TYPE_SINE) {
-        return std::make_unique<chips::SineGenerator>();
-    }
-    if (id == CHIPS_NODE_TYPE_PASSTHROUGH) {
-        return std::make_unique<chips::PassthroughModule>(2);  // stereo passthrough
-    }
-    if (id == CHIPS_NODE_TYPE_TEST_SOURCE) {
-        return std::make_unique<chips::TestSourceModule>(64, 1);
-    }
-    if (id == CHIPS_NODE_TYPE_ADDITIVE_SYNTH) {
-        return std::make_unique<chips::AdditiveSynth>();
-    }
-    if (id == CHIPS_NODE_TYPE_MIXER) {
-        return std::make_unique<chips::MixerModule>();
-    }
-    if (id == CHIPS_NODE_TYPE_DELAY) {
-        return std::make_unique<chips::DelayModule>();
-    }
-    if (id == CHIPS_NODE_TYPE_REVERB) {
-        return std::make_unique<chips::ReverbModule>();
-    }
-    return nullptr;
+    ensureModulesRegistered();
+    return chips::ModuleRegistry::instance().create(std::string(typeId));
 }
 }  // namespace
 
@@ -55,6 +55,8 @@ struct ChipsEngineHandle {
     int maxFrames;
     chips::Graph graph;
     chips::DspLoadTracker loadTracker;
+    /// Tabla de typeIds para introspección sin lookup costoso del Graph.
+    std::vector<std::string> registeredTypesCache;
 };
 
 extern "C" {
@@ -63,6 +65,7 @@ ChipsEngineHandle* chips_engine_create(double sample_rate, int max_frames) {
     if (sample_rate <= 0.0 || max_frames <= 0) {
         return nullptr;
     }
+    ensureModulesRegistered();
     auto* engine = new (std::nothrow) ChipsEngineHandle{};
     if (engine == nullptr) {
         return nullptr;
@@ -70,6 +73,7 @@ ChipsEngineHandle* chips_engine_create(double sample_rate, int max_frames) {
     engine->sampleRate = sample_rate;
     engine->maxFrames = max_frames;
     engine->graph.prepare(sample_rate, max_frames);
+    engine->registeredTypesCache = chips::ModuleRegistry::instance().registeredTypes();
     return engine;
 }
 
@@ -169,6 +173,59 @@ bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int
         return false;
     }
     return engine->graph.postNoteOff(node, midi);
+}
+
+// ---- Introspección (R1) ----
+
+const char* chips_engine_node_type_id(ChipsEngineHandle* engine, ChipsNodeId node) {
+    if (engine == nullptr) {
+        return nullptr;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    return module == nullptr ? nullptr : module->typeId();
+}
+
+int chips_engine_node_param_count(ChipsEngineHandle* engine, ChipsNodeId node) {
+    if (engine == nullptr) {
+        return 0;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    return module == nullptr ? 0 : module->numParameters();
+}
+
+bool chips_engine_node_param_at(ChipsEngineHandle* engine, ChipsNodeId node, int index, ChipsParamSpec* out) {
+    if (engine == nullptr || out == nullptr) {
+        return false;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    if (module == nullptr || index < 0 || index >= module->numParameters()) {
+        return false;
+    }
+    const chips::ParamSpec spec = module->parameterAt(index);
+    out->param_id = spec.paramId;
+    out->name = spec.name;
+    out->unit = spec.unit;
+    out->min_value = spec.minValue;
+    out->max_value = spec.maxValue;
+    out->default_value = spec.defaultValue;
+    return true;
+}
+
+int chips_engine_registered_type_count(ChipsEngineHandle* engine) {
+    if (engine == nullptr) {
+        return 0;
+    }
+    return static_cast<int>(engine->registeredTypesCache.size());
+}
+
+const char* chips_engine_registered_type_at(ChipsEngineHandle* engine, int index) {
+    if (engine == nullptr) {
+        return nullptr;
+    }
+    if (index < 0 || index >= static_cast<int>(engine->registeredTypesCache.size())) {
+        return nullptr;
+    }
+    return engine->registeredTypesCache[static_cast<size_t>(index)].c_str();
 }
 
 }  // extern "C"

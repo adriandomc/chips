@@ -2,6 +2,8 @@
 
 #include "AdditiveSynth.hpp"
 
+#include "ModuleRegistry.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -10,7 +12,32 @@ namespace chips {
 
 namespace {
 constexpr double kTwoPi = 6.28318530717958647692;
+
+const ParamSpec kAdditiveSynthParamSpecs[] = {
+    {AdditiveSynth::ParamVolume, "volume", "", 0.0f, 1.0f, 0.5f},
+    {AdditiveSynth::ParamAttack, "attack", "s", 0.001f, 4.0f, 0.01f},
+    {AdditiveSynth::ParamDecay, "decay", "s", 0.001f, 4.0f, 0.15f},
+    {AdditiveSynth::ParamSustain, "sustain", "", 0.0f, 1.0f, 0.7f},
+    {AdditiveSynth::ParamRelease, "release", "s", 0.001f, 8.0f, 0.4f},
+    {AdditiveSynth::ParamTilt, "tilt", "", 0.0f, 1.0f, 0.5f},
+};
+
+[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
+    "additive_synth", [] { return std::unique_ptr<IModule>(new AdditiveSynth()); });
 }  // namespace
+
+void AdditiveSynth::forceLink() {}
+
+int AdditiveSynth::numParameters() const {
+    return static_cast<int>(sizeof(kAdditiveSynthParamSpecs) / sizeof(kAdditiveSynthParamSpecs[0]));
+}
+
+ParamSpec AdditiveSynth::parameterAt(int index) const {
+    if (index < 0 || index >= numParameters()) {
+        return ParamSpec{};
+    }
+    return kAdditiveSynthParamSpecs[index];
+}
 
 AdditiveSynth::AdditiveSynth() {
     recomputePartialAmplitudes();

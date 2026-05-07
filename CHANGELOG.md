@@ -5,6 +5,38 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### R1 — Modular foundation: ModuleRegistry + metadata API (en curso)
+- C++ `ModuleRegistry` singleton self-registering. Cada módulo añade un
+  registro estático en su `.cpp` (con `[[gnu::used]]`); para asegurar
+  que el linker incluye el object file en la static lib de SwiftPM,
+  cada módulo expone `static void forceLink()` y `ChipsEngine.cpp`
+  llama todos via `touchAllModules()` antes del primer `create`.
+- `IModule` extendido con introspección no-RT:
+  - `typeId()` (puro virtual): identificador estable.
+  - `numParameters()` / `parameterAt(index)`: defaults que devuelven 0
+    y `ParamSpec{}` para módulos sin parámetros expuestos.
+- `ParamSpec { paramId, name, unit, minValue, maxValue, defaultValue }`
+  con cadenas de vida estática.
+- `makeModuleFromTypeId` reducido a un wrapper sobre el registry. Ya no
+  hay switch/if-else por tipo en el motor.
+- C ABI extendida:
+  - `chips_engine_node_type_id`, `chips_engine_node_param_count`,
+    `chips_engine_node_param_at(index, ChipsParamSpec*)`.
+  - `chips_engine_registered_type_count`, `chips_engine_registered_type_at`.
+- Swift facade: `ChipsEngine.registeredTypes`, `nodeTypeId(_:)`,
+  `parameterCount(of:)`, `parameterSpec(of:at:)`, `parameterSpecs(of:)`,
+  struct `ParameterSpec` (Hashable, Sendable).
+- Tests offline (5): registry contiene los 7 tipos built-in; nodeTypeId
+  refleja el tipo creado; AdditiveSynth expone 6 specs con nombres y
+  unidades correctos; Passthrough expone 0 specs; Mixer expone 12
+  (4 canales × gain/pan/mute).
+
+Migración de los 7 módulos existentes (sine, passthrough, test_source,
+additive_synth, mixer, delay, reverb) al pattern de auto-registro.
+**Ningún cambio de comportamiento de runtime**: misma cadena de audio,
+mismos parámetros con los mismos paramIds — solo cambia la forma en
+que se descubren los tipos y se expone su metadata.
+
 ### M7 — Persistencia + Export WAV (en curso)
 - ChipsCore: `ProjectSnapshot` Codable con `schemaVersion=1`. Captura
   nombre, autor, tempo, tracks (incluyendo patterns), settings de synth,
