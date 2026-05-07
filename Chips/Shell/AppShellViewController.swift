@@ -73,7 +73,7 @@ final class AppShellViewController: UIViewController {
         sidebar.setSelected(section)
         let newChild: UIViewController = switch section {
         case .sequencer: SequencerSectionViewController()
-        case .mixer: MixerSectionViewController()
+        case .mixer: MixerSectionViewController(coordinator: coordinator)
         case .synthesizer: SynthesizerSectionViewController(coordinator: coordinator)
         case .grid: GridSectionViewController(coordinator: coordinator)
         case .settings: SettingsSectionViewController()

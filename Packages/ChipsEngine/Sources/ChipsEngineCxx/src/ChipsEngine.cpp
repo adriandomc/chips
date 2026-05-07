@@ -3,9 +3,12 @@
 #include "ChipsEngine/ChipsEngine.h"
 
 #include "AdditiveSynth.hpp"
+#include "DelayModule.hpp"
 #include "DspLoadTracker.hpp"
 #include "Graph.hpp"
+#include "MixerModule.hpp"
 #include "PassthroughModule.hpp"
+#include "ReverbModule.hpp"
 #include "SineGenerator.hpp"
 #include "TestSourceModule.hpp"
 
@@ -33,6 +36,15 @@ std::unique_ptr<chips::IModule> makeModuleFromTypeId(const char* typeId) {
     }
     if (id == CHIPS_NODE_TYPE_ADDITIVE_SYNTH) {
         return std::make_unique<chips::AdditiveSynth>();
+    }
+    if (id == CHIPS_NODE_TYPE_MIXER) {
+        return std::make_unique<chips::MixerModule>();
+    }
+    if (id == CHIPS_NODE_TYPE_DELAY) {
+        return std::make_unique<chips::DelayModule>();
+    }
+    if (id == CHIPS_NODE_TYPE_REVERB) {
+        return std::make_unique<chips::ReverbModule>();
     }
     return nullptr;
 }

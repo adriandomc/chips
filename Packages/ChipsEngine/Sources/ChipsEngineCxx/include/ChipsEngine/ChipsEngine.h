@@ -22,6 +22,9 @@ typedef uint32_t ChipsNodeId;
 #define CHIPS_NODE_TYPE_PASSTHROUGH "passthrough"
 #define CHIPS_NODE_TYPE_TEST_SOURCE "test_source"
 #define CHIPS_NODE_TYPE_ADDITIVE_SYNTH "additive_synth"
+#define CHIPS_NODE_TYPE_MIXER "mixer"
+#define CHIPS_NODE_TYPE_DELAY "delay"
+#define CHIPS_NODE_TYPE_REVERB "reverb"
 
 // ---- Engine lifecycle ----
 

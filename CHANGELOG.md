@@ -5,6 +5,25 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M6 — Mixer + Delay + Reverb (en curso)
+- C++ `MixerModule`: 4 canales stereo (8 inputs), gain/pan/mute por canal,
+  suma a master stereo. ParamId codifica `(channel << 8) | kind`.
+- C++ `DelayModule`: stereo con feedback ping-pong, time/feedback/wet.
+  Buffer ring de hasta 2 s.
+- C++ `ReverbModule`: estilo Schroeder (4 combs paralelos con damping
+  one-pole + 2 allpass en serie). Parámetros: roomSize/damping/wet.
+- Tipos registrados en C ABI: `mixer`, `delay`, `reverb`.
+- Swift facade: enums `MixerParamKind`, `DelayParam`, `ReverbParam`,
+  helpers `setMixerParameter`, `setParameter(_:delay:value:)`,
+  `setParameter(_:reverb:value:)`.
+- `AudioCoordinator` construye el grafo `synth→mixer→delay→reverb→output`
+  con defaults musicales (delay 350 ms / fb 0.35 / wet 0.20; reverb
+  room 0.7 / wet 0.20).
+- `MixerSectionViewController` cablea fader/pan/mute de los primeros 4
+  channel strips al `MixerModule` real (los strips 5–10 quedan visuales).
+- Tests offline: mixer enruta sine con gain, mute produce silencio,
+  cadena synth→mixer→delay→reverb produce audio E2E tras noteOn.
+
 ### M5 — Timeline + Sequencer (en curso)
 - ChipsCore: tipos `PatternNote`, `Pattern`, `Track` (Codable, Sendable)
   con queries `notesStarting/Ending(in:to:)`. PPQ=480 estándar.

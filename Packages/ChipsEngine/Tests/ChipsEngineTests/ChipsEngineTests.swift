@@ -210,6 +210,93 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertLessThan(rms, 0.001)
     }
 
+    func testMixerPassesAudioWithGain() throws {
+        // sine -> mixer ch0 -> output. Verifica que mixer enruta y aplica gain.
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let sine = engine.addNode(.sine), let mixer = engine.addNode(.mixer) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(sine, port: 0, to: mixer, port: 0)
+        engine.connect(sine, port: 1, to: mixer, port: 1)
+        engine.setOutputNode(mixer)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(sine, sine: .frequency, value: 440)
+        engine.setParameter(sine, sine: .amplitude, value: 0.25)
+        engine.setParameter(sine, sine: .enabled, value: 1.0)
+        engine.setMixerParameter(mixer, channel: 0, kind: .gain, value: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        engine.render(into: buffer, frames: frames)
+
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        XCTAssertGreaterThan((sumSquares / Double(frames * 2)).squareRoot(), 0.05)
+    }
+
+    func testMutedMixerChannelProducesSilence() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let sine = engine.addNode(.sine), let mixer = engine.addNode(.mixer) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(sine, port: 0, to: mixer, port: 0)
+        engine.connect(sine, port: 1, to: mixer, port: 1)
+        engine.setOutputNode(mixer)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(sine, sine: .frequency, value: 440)
+        engine.setParameter(sine, sine: .amplitude, value: 0.25)
+        engine.setParameter(sine, sine: .enabled, value: 1.0)
+        engine.setMixerParameter(mixer, channel: 0, kind: .mute, value: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        engine.render(into: buffer, frames: frames)
+        for i in 0 ..< frames * 2 {
+            XCTAssertEqual(buffer[i], 0.0, accuracy: 1.0e-5)
+        }
+    }
+
+    func testFullSynthChainProducesAudio() throws {
+        // synth -> mixer -> delay -> reverb -> output. Sanity end-to-end.
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let mixer = engine.addNode(.mixer),
+              let delay = engine.addNode(.delay),
+              let reverb = engine.addNode(.reverb)
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: mixer, port: 0)
+        engine.connect(synth, port: 1, to: mixer, port: 1)
+        engine.connect(mixer, port: 0, to: delay, port: 0)
+        engine.connect(mixer, port: 1, to: delay, port: 1)
+        engine.connect(delay, port: 0, to: reverb, port: 0)
+        engine.connect(delay, port: 1, to: reverb, port: 1)
+        engine.setOutputNode(reverb)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 0.8)
+        engine.setParameter(synth, additive: .attack, value: 0.001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+        engine.setMixerParameter(mixer, channel: 0, kind: .gain, value: 1.0)
+        engine.sendNoteOn(synth, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+        }
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        XCTAssertGreaterThan((sumSquares / Double(frames * 2)).squareRoot(), 0.01)
+    }
+
     func testRemoveAndRebuildGraph() throws {
         let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
         guard let sine = engine.addNode(.sine) else {
