@@ -56,7 +56,7 @@ final class SettingsSectionViewController: UIViewController {
         newButton.addTarget(self, action: #selector(newTapped), for: .touchUpInside)
         saveButton.addTarget(self, action: #selector(saveTapped), for: .touchUpInside)
         loadButton.addTarget(self, action: #selector(loadTapped), for: .touchUpInside)
-        mainTrackButton.addTarget(self, action: #selector(exportMasterTapped), for: .touchUpInside)
+        mainTrackButton.addTarget(self, action: #selector(exportMainTrackTapped), for: .touchUpInside)
         stemsButton.addTarget(self, action: #selector(stemsTapped), for: .touchUpInside)
     }
 
@@ -212,12 +212,12 @@ final class SettingsSectionViewController: UIViewController {
         }
     }
 
-    @objc private func exportMasterTapped() {
-        let name = (projectName.text?.isEmpty == false) ? projectName.text! : "master"
+    @objc private func exportMainTrackTapped() {
+        let name = (projectName.text?.isEmpty == false) ? projectName.text! : "main"
         let url = documentsDirectory().appendingPathComponent("\(name).wav")
         do {
             try coordinator.exportWav(to: url, seconds: 8)
-            showAlert(title: "Master exportado", message: "\(url.lastPathComponent) (8 s, 16-bit)")
+            showAlert(title: "Main track exportado", message: "\(url.lastPathComponent) (8 s, 16-bit)")
         } catch {
             showAlert(title: "Error al exportar", message: "\(error)")
         }

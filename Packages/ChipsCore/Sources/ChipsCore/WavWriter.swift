@@ -23,7 +23,7 @@ public enum WavWriter {
         sampleRate: Int,
         to url: URL
     ) throws {
-        guard sampleRate > 0, samples.count > 0, samples.count % 2 == 0 else {
+        guard sampleRate > 0, !samples.isEmpty, samples.count % 2 == 0 else {
             throw WriterError.invalidParameters
         }
         let frameCount = samples.count / 2
@@ -64,17 +64,17 @@ public enum WavWriter {
 
 private extension Data {
     mutating func append(uint16LE value: UInt16) {
-        var v = value.littleEndian
-        Swift.withUnsafeBytes(of: &v) { append(contentsOf: $0) }
+        var encoded = value.littleEndian
+        Swift.withUnsafeBytes(of: &encoded) { append(contentsOf: $0) }
     }
 
     mutating func append(uint32LE value: UInt32) {
-        var v = value.littleEndian
-        Swift.withUnsafeBytes(of: &v) { append(contentsOf: $0) }
+        var encoded = value.littleEndian
+        Swift.withUnsafeBytes(of: &encoded) { append(contentsOf: $0) }
     }
 
     mutating func append(int16LE value: Int16) {
-        var v = value.littleEndian
-        Swift.withUnsafeBytes(of: &v) { append(contentsOf: $0) }
+        var encoded = value.littleEndian
+        Swift.withUnsafeBytes(of: &encoded) { append(contentsOf: $0) }
     }
 }

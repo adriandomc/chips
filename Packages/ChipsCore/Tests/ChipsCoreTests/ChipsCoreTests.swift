@@ -92,7 +92,13 @@ final class ChipsCoreTests: XCTestCase {
     }
 
     func testProjectStorageRejectsFutureSchemaVersion() {
-        let payload = #"{"schemaVersion":999,"name":"x","author":"","tempoBpm":120,"tracks":[],"synth":{"volume":0.5,"attack":0.01,"decay":0.1,"sustain":0.7,"release":0.3,"tilt":0.5},"mixerChannels":[],"delay":{"timeSeconds":0.3,"feedback":0.3,"wet":0.2},"reverb":{"roomSize":0.7,"damping":0.3,"wet":0.2}}"#
+        let payload = #"""
+        {"schemaVersion":999,"name":"x","author":"","tempoBpm":120,"tracks":[],
+        "synth":{"volume":0.5,"attack":0.01,"decay":0.1,"sustain":0.7,"release":0.3,"tilt":0.5},
+        "mixerChannels":[],
+        "delay":{"timeSeconds":0.3,"feedback":0.3,"wet":0.2},
+        "reverb":{"roomSize":0.7,"damping":0.3,"wet":0.2}}
+        """#
         let data = Data(payload.utf8)
         XCTAssertThrowsError(try ProjectStorage.decode(data))
     }
@@ -110,9 +116,9 @@ final class ChipsCoreTests: XCTestCase {
 
         let data = try Data(contentsOf: url)
         XCTAssertGreaterThan(data.count, 44)
-        XCTAssertEqual(String(decoding: data.prefix(4), as: UTF8.self), "RIFF")
-        XCTAssertEqual(String(decoding: data[8 ..< 12], as: UTF8.self), "WAVE")
-        XCTAssertEqual(String(decoding: data[12 ..< 16], as: UTF8.self), "fmt ")
+        XCTAssertEqual(String(data: data.prefix(4), encoding: .utf8), "RIFF")
+        XCTAssertEqual(String(data: data[8 ..< 12], encoding: .utf8), "WAVE")
+        XCTAssertEqual(String(data: data[12 ..< 16], encoding: .utf8), "fmt ")
         try? FileManager.default.removeItem(at: url)
     }
 
