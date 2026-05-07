@@ -7,7 +7,10 @@ public final class ChipsButton: ChipsControl {
     private let strokeLayer = CAShapeLayer()
 
     public var title: String? {
-        didSet { titleLabel.text = title?.uppercased() }
+        didSet {
+            titleLabel.text = title?.uppercased()
+            accessibilityLabel = title
+        }
     }
 
     public var titleFont: UIFont = ChipsTheme.Font.mono(size: 13, weight: .semibold) {
@@ -53,6 +56,8 @@ public final class ChipsButton: ChipsControl {
             titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: contentInsets.top),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -contentInsets.bottom),
         ])
+        isAccessibilityElement = true
+        accessibilityTraits = .button
     }
 
     override public func draw(_ rect: CGRect) {

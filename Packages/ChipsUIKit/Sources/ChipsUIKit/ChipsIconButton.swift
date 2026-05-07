@@ -39,6 +39,17 @@ public final class ChipsIconButton: ChipsControl {
             iconView.centerYAnchor.constraint(equalTo: centerYAnchor),
         ])
         updateIcon()
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+    }
+
+    override public var accessibilityTraits: UIAccessibilityTraits {
+        get {
+            // Si el botón está seleccionado, anunciar como `.selected` para
+            // que VoiceOver lo lea como "Sequencer, selected".
+            isSelected ? [.button, .selected] : .button
+        }
+        set { super.accessibilityTraits = newValue }
     }
 
     private func updateIcon() {
