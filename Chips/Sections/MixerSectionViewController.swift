@@ -33,9 +33,10 @@ final class MixerSectionViewController: UIViewController {
 
         // Cuenta canales reales del MixerModule. R4: paramétrico, ya no 4 fijos.
         let wiredCount = wiredChannelCount()
+        let trackFormat = String(localized: "mixer.track_format")
         for i in 0 ..< wiredCount {
             let strip = ChannelStripView(
-                label: "Track \(i + 1)",
+                label: String(format: trackFormat, i + 1),
                 controller: controller,
                 channelIndex: i
             )
@@ -121,7 +122,7 @@ private final class ChannelStripView: UIView {
         fader.accessibilityLabel = "\(label) gain"
         fader.accessibilityValueFormatter = { value in String(format: "%.0f%%", value * 100) }
 
-        panKnob.label = "Pan"
+        panKnob.label = String(localized: "mixer.label.pan")
         panKnob.minValue = -1
         panKnob.maxValue = 1
         panKnob.value = initialPan()
@@ -132,9 +133,9 @@ private final class ChannelStripView: UIView {
                 : String(format: "Right %.0f%%", value * 100)
         }
 
-        let soloButton = makeSmallButton(title: "S")
+        let soloButton = makeSmallButton(title: String(localized: "mixer.label.solo"))
         soloButton.accessibilityLabel = "Solo"
-        muteButton.title = "M"
+        muteButton.title = String(localized: "mixer.label.mute")
         muteButton.accessibilityLabel = "Mute"
         muteButton.titleFont = ChipsTheme.Font.mono(size: 10, weight: .semibold)
         muteButton.contentInsets = .init(top: 2, left: 6, bottom: 2, right: 6)
@@ -185,7 +186,7 @@ private final class ChannelStripView: UIView {
         stroke.backgroundColor = ChipsTheme.buttonStroke.cgColor
         box.layer.addSublayer(stroke)
         let eqLabel = UILabel()
-        eqLabel.text = "EQ"
+        eqLabel.text = String(localized: "mixer.label.eq")
         eqLabel.font = ChipsTheme.Font.body(size: 11, weight: .medium)
         eqLabel.textAlignment = .center
         box.addSubview(eqLabel)
@@ -207,7 +208,7 @@ private final class ChannelStripView: UIView {
 
     private func makeSendsLabel() -> UILabel {
         let label = UILabel()
-        label.text = "Sends"
+        label.text = String(localized: "mixer.label.sends")
         label.font = ChipsTheme.Font.body(size: 10)
         label.textAlignment = .center
         label.textColor = ChipsTheme.textSecondary

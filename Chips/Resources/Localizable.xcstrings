@@ -1,0 +1,503 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "about.copyright" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "© 2026 Adrián Domingo Carballal." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "© 2026 Adrián Domingo Carballal." } }
+      }
+    },
+    "about.description" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Modular DAW for iOS." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "DAW modular para iOS." } }
+      }
+    },
+    "about.licenses" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Open Source Licenses" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Licencias de Código Abierto" } }
+      }
+    },
+    "about.placeholder_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "URL pending. It will be published with the App Store launch." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "URL pendiente. Se publicará junto con el lanzamiento en App Store." } }
+      }
+    },
+    "about.privacy_policy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy Policy" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Política de Privacidad" } }
+      }
+    },
+    "about.purchases_label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "PURCHASES" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "COMPRAS" } }
+      }
+    },
+    "about.restore_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore Purchases" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Restaurar Compras" } }
+      }
+    },
+    "about.restore_error_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not sync: %@" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No se pudo sincronizar: %@" } }
+      }
+    },
+    "about.restore_hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chips is a one-time purchase. Restore re-syncs with your App Store account." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Chips es una compra única. Restaurar re-sincroniza con tu cuenta de App Store." } }
+      }
+    },
+    "about.restore_success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Purchases synced with your App Store account." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compras sincronizadas con tu cuenta de App Store." } }
+      }
+    },
+    "about.restore_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Restaurar" } }
+      }
+    },
+    "about.terms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Terms of Service" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Términos de Servicio" } }
+      }
+    },
+    "about.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Acerca" } }
+      }
+    },
+    "about.version_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Version %1$@ (%2$@)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Versión %1$@ (%2$@)" } }
+      }
+    },
+    "common.cancel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cancelar" } }
+      }
+    },
+    "common.error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Error" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Error" } }
+      }
+    },
+    "common.ok" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "OK" } }
+      }
+    },
+    "generic_panel.empty" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This module exposes no parameters." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Este módulo no expone parámetros." } }
+      }
+    },
+    "help.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Modular DAW for iOS · M3 (UI framework)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "DAW modular para iOS · M3 (framework de UI)" } }
+      }
+    },
+    "mixer.label.eq" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "EQ" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "EQ" } }
+      }
+    },
+    "mixer.label.mute" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "M" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "M" } }
+      }
+    },
+    "mixer.label.pan" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pan" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pan" } }
+      }
+    },
+    "mixer.label.sends" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sends" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Envíos" } }
+      }
+    },
+    "mixer.label.solo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "S" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "S" } }
+      }
+    },
+    "mixer.track_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Track %d" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pista %d" } }
+      }
+    },
+    "onboarding.button.get_started" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "GET STARTED" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "EMPEZAR" } }
+      }
+    },
+    "onboarding.button.next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "NEXT" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "SIGUIENTE" } }
+      }
+    },
+    "onboarding.button.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SKIP" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "SALTAR" } }
+      }
+    },
+    "onboarding.export.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Bounce to WAV, save your project as .chips, share it. Made on your phone, ready to release." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Exporta a WAV, guarda el proyecto como .chips, compártelo. Hecho en tu móvil, listo para publicar." } }
+      }
+    },
+    "onboarding.export.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Ship it" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Publica" } }
+      }
+    },
+    "onboarding.sequencer.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tap the grid to draw notes. Patterns chain into songs. Tempo, swing and quantize in one place." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Toca la cuadrícula para dibujar notas. Los patterns se encadenan en canciones. Tempo, swing y quantize en un solo sitio." } }
+      }
+    },
+    "onboarding.sequencer.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sequence" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Secuencia" } }
+      }
+    },
+    "onboarding.sound_design.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Each instrument exposes its own knobs. The mixer routes everything to stereo with gain, pan and mute per channel." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cada instrumento expone sus propios knobs. El mixer enruta todo al estéreo con gain, pan y mute por canal." } }
+      }
+    },
+    "onboarding.sound_design.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sound design" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Diseño sonoro" } }
+      }
+    },
+    "onboarding.welcome.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A modular DAW built for iPhone & iPad. Instruments, effects, sequencer, mixer — without slot limits." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Un DAW modular para iPhone y iPad. Instrumentos, efectos, secuenciador y mixer — sin límite de slots." } }
+      }
+    },
+    "onboarding.welcome.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Welcome to Chips" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Bienvenido a Chips" } }
+      }
+    },
+    "section.grid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Grid" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cuadrícula" } }
+      }
+    },
+    "section.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Help" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ayuda" } }
+      }
+    },
+    "section.mixer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mixer" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mixer" } }
+      }
+    },
+    "section.sequencer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sequencer" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Secuenciador" } }
+      }
+    },
+    "section.settings" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes" } }
+      }
+    },
+    "section.synthesizer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Synthesizer" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sintetizador" } }
+      }
+    },
+    "settings.alert.export_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export error" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Error al exportar" } }
+      }
+    },
+    "settings.alert.export_main_message_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ (8 s, 16-bit)" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "%@ (8 s, 16-bit)" } }
+      }
+    },
+    "settings.alert.export_main_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Main track exported" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pista principal exportada" } }
+      }
+    },
+    "settings.alert.load_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Load error" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Error al cargar" } }
+      }
+    },
+    "settings.alert.load_project" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Load project" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cargar proyecto" } }
+      }
+    },
+    "settings.alert.new_project_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Defaults applied." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Se aplicaron los defaults." } }
+      }
+    },
+    "settings.alert.new_project_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "New project" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nuevo proyecto" } }
+      }
+    },
+    "settings.alert.no_projects_message_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No .%@ files saved." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay archivos .%@ guardados." } }
+      }
+    },
+    "settings.alert.no_projects_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No projects" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin proyectos" } }
+      }
+    },
+    "settings.alert.save_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save error" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Error al guardar" } }
+      }
+    },
+    "settings.alert.save_success" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Project saved" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Proyecto guardado" } }
+      }
+    },
+    "settings.alert.stems_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pending (per-channel mixer export)." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pendiente (export por canal del mixer)." } }
+      }
+    },
+    "settings.alert.stems_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Stems" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Stems" } }
+      }
+    },
+    "settings.button.about" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ABOUT" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "ACERCA" } }
+      }
+    },
+    "settings.button.load" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "LOAD" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "CARGAR" } }
+      }
+    },
+    "settings.button.master_track" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "MASTER TRACK" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "PISTA MASTER" } }
+      }
+    },
+    "settings.button.new" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "NEW" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "NUEVO" } }
+      }
+    },
+    "settings.button.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SAVE" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "GUARDAR" } }
+      }
+    },
+    "settings.button.stems" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "STEMS" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "STEMS" } }
+      }
+    },
+    "settings.button.tap_tempo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "TAP TEMPO" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "TAP TEMPO" } }
+      }
+    },
+    "settings.button.wav" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "WAV" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "WAV" } }
+      }
+    },
+    "settings.label.author" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Author" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Autor" } }
+      }
+    },
+    "settings.label.bpm" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "BPM" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "BPM" } }
+      }
+    },
+    "settings.label.export" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "EXPORT" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "EXPORTAR" } }
+      }
+    },
+    "settings.label.file_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "File Format" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Formato" } }
+      }
+    },
+    "settings.label.project_name" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Project Name" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nombre del Proyecto" } }
+      }
+    },
+    "settings.label.tempo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Tempo" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tempo" } }
+      }
+    },
+    "settings.placeholder.untitled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Untitled" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sin título" } }
+      }
+    },
+    "track.default_name_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Track %d" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pista %d" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

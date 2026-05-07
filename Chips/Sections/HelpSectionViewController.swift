@@ -17,7 +17,7 @@ final class HelpSectionViewController: UIViewController {
         title.textColor = ChipsTheme.textPrimary
 
         let subtitle = UILabel()
-        subtitle.text = "DAW modular para iOS · M3 (UI framework)"
+        subtitle.text = String(localized: "help.subtitle")
         subtitle.font = ChipsTheme.Font.body(size: 14)
         subtitle.textColor = ChipsTheme.textSecondary
 
