@@ -9,24 +9,24 @@ import UIKit
 /// `GenericInstrumentPanelViewController` que renderiza un knob por cada
 /// `ParameterSpec` expuesto por el módulo.
 @MainActor
-public enum InstrumentUIRegistry {
-    public typealias Builder = (NodeRef, ProjectController) -> UIViewController
+enum InstrumentUIRegistry {
+    typealias Builder = (NodeRef, ProjectController) -> UIViewController
 
     private static var builders: [String: Builder] = [:]
 
-    public static func register(typeId: String, builder: @escaping Builder) {
+    static func register(typeId: String, builder: @escaping Builder) {
         builders[typeId] = builder
     }
 
-    public static func unregister(typeId: String) {
+    static func unregister(typeId: String) {
         builders.removeValue(forKey: typeId)
     }
 
-    public static func hasBuilder(typeId: String) -> Bool {
+    static func hasBuilder(typeId: String) -> Bool {
         builders[typeId] != nil
     }
 
-    public static func makePanel(
+    static func makePanel(
         typeId: String,
         ref: NodeRef,
         controller: ProjectController
@@ -39,7 +39,7 @@ public enum InstrumentUIRegistry {
 
     /// Builders built-in de Chips. Llamar una vez al boot. Cada módulo nuevo
     /// que llegue puede registrarse aquí o en su propio init.
-    public static func registerBuiltins() {
+    static func registerBuiltins() {
         register(typeId: "additive_synth") { _, controller in
             SynthesizerSectionViewController(controller: controller)
         }
