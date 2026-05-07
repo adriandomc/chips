@@ -16,74 +16,97 @@ public enum ProjectMigrator {
         let delayRef = UUID()
         let reverbRef = UUID()
 
-        let synthNode = NodeInstance(
-            id: synthRef,
-            typeId: "additive_synth",
-            displayName: "Synth",
-            parameters: [
-                "volume": v1.synth.volume,
-                "attack": v1.synth.attack,
-                "decay": v1.synth.decay,
-                "sustain": v1.synth.sustain,
-                "release": v1.synth.release,
-                "tilt": v1.synth.tilt,
-            ]
-        )
-
-        let mixerNode = NodeInstance(
-            id: mixerRef,
-            typeId: "mixer",
-            displayName: "Mixer",
-            parameters: mixerParameters(from: v1.mixerChannels)
-        )
-
-        let delayNode = NodeInstance(
-            id: delayRef,
-            typeId: "delay",
-            displayName: "Delay",
-            parameters: [
-                "time": v1.delay.timeSeconds,
-                "feedback": v1.delay.feedback,
-                "wet": v1.delay.wet,
-            ]
-        )
-
-        let reverbNode = NodeInstance(
-            id: reverbRef,
-            typeId: "reverb",
-            displayName: "Reverb",
-            parameters: [
-                "room_size": v1.reverb.roomSize,
-                "damping": v1.reverb.damping,
-                "wet": v1.reverb.wet,
-            ]
-        )
-
-        let connections: [ConnectionDescriptor] = [
-            .init(src: synthRef, srcPort: 0, dst: mixerRef, dstPort: 0),
-            .init(src: synthRef, srcPort: 1, dst: mixerRef, dstPort: 1),
-            .init(src: mixerRef, srcPort: 0, dst: delayRef, dstPort: 0),
-            .init(src: mixerRef, srcPort: 1, dst: delayRef, dstPort: 1),
-            .init(src: delayRef, srcPort: 0, dst: reverbRef, dstPort: 0),
-            .init(src: delayRef, srcPort: 1, dst: reverbRef, dstPort: 1),
+        let nodes = [
+            makeSynthNode(ref: synthRef, settings: v1.synth),
+            makeMixerNode(ref: mixerRef, channels: v1.mixerChannels),
+            makeDelayNode(ref: delayRef, settings: v1.delay),
+            makeReverbNode(ref: reverbRef, settings: v1.reverb),
         ]
-
-        // Heredamos los tracks; en v1 todos tocaban al synth único.
-        var migratedTracks = v1.tracks
-        for index in migratedTracks.indices where migratedTracks[index].instrumentRef == nil {
-            migratedTracks[index].instrumentRef = synthRef
-        }
+        let connections = makeConnections(synth: synthRef, mixer: mixerRef, delay: delayRef, reverb: reverbRef)
+        let migratedTracks = routeTracks(v1.tracks, toSynth: synthRef)
 
         return ProjectGraph(
             schemaVersion: ProjectGraph.currentSchemaVersion,
             name: v1.name,
             author: v1.author,
             tempoBpm: v1.tempoBpm,
-            nodes: [synthNode, mixerNode, delayNode, reverbNode],
+            nodes: nodes,
             connections: connections,
             outputNodeRef: reverbRef,
             tracks: migratedTracks
         )
+    }
+
+    private static func makeSynthNode(ref: UUID, settings: SynthSettings) -> NodeInstance {
+        NodeInstance(
+            id: ref,
+            typeId: "additive_synth",
+            displayName: "Synth",
+            parameters: [
+                "volume": settings.volume,
+                "attack": settings.attack,
+                "decay": settings.decay,
+                "sustain": settings.sustain,
+                "release": settings.release,
+                "tilt": settings.tilt,
+            ]
+        )
+    }
+
+    private static func makeMixerNode(ref: UUID, channels: [MixerChannelSettings]) -> NodeInstance {
+        NodeInstance(
+            id: ref,
+            typeId: "mixer",
+            displayName: "Mixer",
+            parameters: mixerParameters(from: channels)
+        )
+    }
+
+    private static func makeDelayNode(ref: UUID, settings: DelaySettings) -> NodeInstance {
+        NodeInstance(
+            id: ref,
+            typeId: "delay",
+            displayName: "Delay",
+            parameters: [
+                "time": settings.timeSeconds,
+                "feedback": settings.feedback,
+                "wet": settings.wet,
+            ]
+        )
+    }
+
+    private static func makeReverbNode(ref: UUID, settings: ReverbSettings) -> NodeInstance {
+        NodeInstance(
+            id: ref,
+            typeId: "reverb",
+            displayName: "Reverb",
+            parameters: [
+                "room_size": settings.roomSize,
+                "damping": settings.damping,
+                "wet": settings.wet,
+            ]
+        )
+    }
+
+    private static func makeConnections(
+        synth: UUID, mixer: UUID, delay: UUID, reverb: UUID
+    ) -> [ConnectionDescriptor] {
+        [
+            .init(src: synth, srcPort: 0, dst: mixer, dstPort: 0),
+            .init(src: synth, srcPort: 1, dst: mixer, dstPort: 1),
+            .init(src: mixer, srcPort: 0, dst: delay, dstPort: 0),
+            .init(src: mixer, srcPort: 1, dst: delay, dstPort: 1),
+            .init(src: delay, srcPort: 0, dst: reverb, dstPort: 0),
+            .init(src: delay, srcPort: 1, dst: reverb, dstPort: 1),
+        ]
+    }
+
+    private static func routeTracks(_ tracks: [Track], toSynth synthRef: UUID) -> [Track] {
+        var result = tracks
+        for index in result.indices where result[index].instrumentRef == nil {
+            result[index].instrumentRef = synthRef
+        }
+        return result
     }
 
     private static func mixerParameters(from channels: [MixerChannelSettings]) -> [String: Float] {
