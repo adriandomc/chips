@@ -1,4 +1,4 @@
-// MixerModule.hpp — mixer simple con N canales stereo. Cada canal tiene
+// MixerModule.hpp — mixer paramétrico con N canales stereo. Cada canal tiene
 // gain, pan y mute. Suma a un master stereo. RT-safe.
 
 #ifndef CHIPS_MIXER_MODULE_HPP
@@ -6,16 +6,18 @@
 
 #include "IModule.hpp"
 
-#include <array>
 #include <cstdint>
+#include <string>
+#include <vector>
 
 namespace chips {
 
 class MixerModule : public IModule {
 public:
-    static constexpr int kMaxChannels = 4;
+    /// Límite duro razonable para evitar grafos absurdos. R5+ podría subirlo.
+    static constexpr int kMaxChannels = 64;
 
-    /// paramId = (channel << 8) | kind. kind = 0:gain, 1:pan, 2:mute.
+    /// paramId = (channel << 8) | kind.
     enum ParamKind : uint32_t {
         Gain = 0,
         Pan = 1,
@@ -26,7 +28,11 @@ public:
         return (static_cast<uint32_t>(channel) << 8) | static_cast<uint32_t>(kind);
     }
 
-    MixerModule();
+    /// `numChannels` se clampea a [1, kMaxChannels]. Default 8 (concuerda con
+    /// la cantidad de strips que la UI muestra). El factory del registry usa
+    /// el constructor por defecto; serializaciones con otro número se respetan
+    /// si el ProjectGraph almacena un parámetro `numChannels` (R5+).
+    explicit MixerModule(int numChannels = 8);
 
     static void forceLink();
 
@@ -36,11 +42,13 @@ public:
     void process(const ProcessContext& ctx) override;
     void handleParameterChange(uint32_t paramId, float value) override;
 
-    int numAudioInputs() const override { return kMaxChannels * 2; }
+    int numAudioInputs() const override { return numChannels_ * 2; }
     int numAudioOutputs() const override { return 2; }
 
-    int numParameters() const override;
+    int numParameters() const override { return static_cast<int>(paramSpecs_.size()); }
     ParamSpec parameterAt(int index) const override;
+
+    int numChannels() const { return numChannels_; }
 
 private:
     struct Channel {
@@ -48,7 +56,13 @@ private:
         float pan = 0.0f;
         bool muted = false;
     };
-    std::array<Channel, kMaxChannels> channels_{};
+
+    int numChannels_;
+    std::vector<Channel> channels_;
+    /// Storage estable de los names de los specs ("ch0_gain", etc.). Reservado
+    /// con la capacidad final en el constructor para que `c_str()` no se invalide.
+    std::vector<std::string> paramNameStorage_;
+    std::vector<ParamSpec> paramSpecs_;
 };
 
 }  // namespace chips

@@ -10,6 +10,7 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         options _: UIScene.ConnectionOptions
     ) {
         guard let windowScene = scene as? UIWindowScene else { return }
+        InstrumentUIRegistry.registerBuiltins()
         let window = UIWindow(windowScene: windowScene)
         do {
             let projectController = try ProjectController(graph: ProjectController.defaultGraph())

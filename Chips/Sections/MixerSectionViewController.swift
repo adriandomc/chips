@@ -4,10 +4,6 @@ import UIKit
 
 final class MixerSectionViewController: UIViewController {
     private let controller: ProjectController
-    private let visibleStripCount = 10
-    /// Solo los primeros 4 strips están cableados al MixerModule (kMaxChannels=4).
-    /// Los strips 5–10 son visuales hasta que MixerModule sea paramétrico (R4).
-    private let wiredChannelCount = 4
 
     init(controller: ProjectController) {
         self.controller = controller
@@ -35,12 +31,13 @@ final class MixerSectionViewController: UIViewController {
         row.translatesAutoresizingMaskIntoConstraints = false
         scroll.addSubview(row)
 
-        for i in 0 ..< visibleStripCount {
-            let isWired = i < wiredChannelCount
+        // Cuenta canales reales del MixerModule. R4: paramétrico, ya no 4 fijos.
+        let wiredCount = wiredChannelCount()
+        for i in 0 ..< wiredCount {
             let strip = ChannelStripView(
                 label: "Track \(i + 1)",
-                controller: isWired ? controller : nil,
-                channelIndex: isWired ? i : nil
+                controller: controller,
+                channelIndex: i
             )
             row.addArrangedSubview(strip)
             strip.widthAnchor.constraint(equalToConstant: 78).isActive = true
@@ -58,6 +55,16 @@ final class MixerSectionViewController: UIViewController {
             row.bottomAnchor.constraint(equalTo: scroll.contentLayoutGuide.bottomAnchor),
             row.heightAnchor.constraint(equalTo: scroll.frameLayoutGuide.heightAnchor),
         ])
+    }
+
+    private func wiredChannelCount() -> Int {
+        guard let mixerRef = controller.mixerRef,
+              let chipsId = controller.chipsNodeId(for: mixerRef)
+        else {
+            return 0
+        }
+        // Cada canal del MixerModule expone exactamente 3 specs (gain/pan/mute).
+        return controller.host.engine.parameterCount(of: chipsId) / 3
     }
 }
 
