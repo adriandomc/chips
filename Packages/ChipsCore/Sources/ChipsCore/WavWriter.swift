@@ -31,7 +31,7 @@ public enum WavWriter {
         let bytesPerSample = bitsPerSample / 8
         let channels = 2
         let dataSize = frameCount * channels * bytesPerSample
-        let fileSize = 36 + dataSize  // RIFF header + fmt + data header
+        let fileSize = 36 + dataSize // RIFF header + fmt + data header
 
         var data = Data()
         data.reserveCapacity(8 + fileSize)
@@ -42,7 +42,7 @@ public enum WavWriter {
 
         data.append(contentsOf: "fmt ".utf8)
         data.append(uint32LE: 16) // chunk size
-        data.append(uint16LE: 1)  // format code: PCM
+        data.append(uint16LE: 1) // format code: PCM
         data.append(uint16LE: UInt16(channels))
         data.append(uint32LE: UInt32(sampleRate))
         data.append(uint32LE: UInt32(sampleRate * channels * bytesPerSample))

@@ -77,7 +77,7 @@ public struct MixerChannelSettings: Codable, Sendable {
     }
 }
 
-public extension Array where Element == MixerChannelSettings {
+public extension [MixerChannelSettings] {
     static var defaultBank: [MixerChannelSettings] {
         Array(repeating: MixerChannelSettings(), count: 4)
     }
