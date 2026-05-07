@@ -18,13 +18,15 @@ const ParamSpec kSineParamSpecs[] = {
     {SineGenerator::ParamAmplitude, "amplitude", "", 0.0f, 1.0f, 0.25f},
 };
 
-[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
-    "sine", [] { return std::unique_ptr<IModule>(new SineGenerator()); });
+[[gnu::used]] const bool kRegistered =
+    ModuleRegistry::instance().register_("sine", [] { return std::unique_ptr<IModule>(new SineGenerator()); });
 }  // namespace
 
 void SineGenerator::forceLink() {}
 
-const char* SineGenerator::typeId() const { return "sine"; }
+const char* SineGenerator::typeId() const {
+    return "sine";
+}
 
 int SineGenerator::numParameters() const {
     return static_cast<int>(sizeof(kSineParamSpecs) / sizeof(kSineParamSpecs[0]));

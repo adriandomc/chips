@@ -16,8 +16,8 @@ const ParamSpec kDelayParamSpecs[] = {
     {DelayModule::ParamWet, "wet", "", 0.0f, 1.0f, 0.20f},
 };
 
-[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
-    "delay", [] { return std::unique_ptr<IModule>(new DelayModule()); });
+[[gnu::used]] const bool kRegistered =
+    ModuleRegistry::instance().register_("delay", [] { return std::unique_ptr<IModule>(new DelayModule()); });
 }  // namespace
 
 void DelayModule::forceLink() {}

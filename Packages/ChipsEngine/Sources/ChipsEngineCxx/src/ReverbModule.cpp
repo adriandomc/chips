@@ -19,8 +19,8 @@ const ParamSpec kReverbParamSpecs[] = {
     {ReverbModule::ParamWet, "wet", "", 0.0f, 1.0f, 0.2f},
 };
 
-[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
-    "reverb", [] { return std::unique_ptr<IModule>(new ReverbModule()); });
+[[gnu::used]] const bool kRegistered =
+    ModuleRegistry::instance().register_("reverb", [] { return std::unique_ptr<IModule>(new ReverbModule()); });
 }  // namespace
 
 void ReverbModule::forceLink() {}

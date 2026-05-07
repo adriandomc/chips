@@ -31,13 +31,15 @@ const ParamSpec kMixerParamSpecs[kMixerParamCount] = {
     {(3u << 8) | MixerModule::Mute, "ch3_mute", "", 0.0f, 1.0f, 0.0f},
 };
 
-[[gnu::used]] const bool kRegistered = ModuleRegistry::instance().register_(
-    "mixer", [] { return std::unique_ptr<IModule>(new MixerModule()); });
+[[gnu::used]] const bool kRegistered =
+    ModuleRegistry::instance().register_("mixer", [] { return std::unique_ptr<IModule>(new MixerModule()); });
 }  // namespace
 
 void MixerModule::forceLink() {}
 
-int MixerModule::numParameters() const { return kMixerParamCount; }
+int MixerModule::numParameters() const {
+    return kMixerParamCount;
+}
 
 ParamSpec MixerModule::parameterAt(int index) const {
     if (index < 0 || index >= kMixerParamCount) {

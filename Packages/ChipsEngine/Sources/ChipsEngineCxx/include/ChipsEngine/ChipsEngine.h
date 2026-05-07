@@ -59,12 +59,8 @@ double chips_engine_sample_rate(const ChipsEngineHandle* engine);
 
 ChipsNodeId chips_engine_add_node(ChipsEngineHandle* engine, const char* type_id);
 bool chips_engine_remove_node(ChipsEngineHandle* engine, ChipsNodeId node);
-bool chips_engine_connect(ChipsEngineHandle* engine,
-                          ChipsNodeId src, int src_port,
-                          ChipsNodeId dst, int dst_port);
-bool chips_engine_disconnect(ChipsEngineHandle* engine,
-                             ChipsNodeId src, int src_port,
-                             ChipsNodeId dst, int dst_port);
+bool chips_engine_connect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port);
+bool chips_engine_disconnect(ChipsEngineHandle* engine, ChipsNodeId src, int src_port, ChipsNodeId dst, int dst_port);
 void chips_engine_set_output_node(ChipsEngineHandle* engine, ChipsNodeId node);
 bool chips_engine_compile(ChipsEngineHandle* engine);
 
