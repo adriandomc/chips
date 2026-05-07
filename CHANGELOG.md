@@ -5,6 +5,47 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-D — Accesibilidad VoiceOver para componentes UI custom
+- `ChipsKnob`: `isAccessibilityElement = true`, `traits = .adjustable`,
+  `accessibilityLabel` espejea `label`. `accessibilityValue` se formatea
+  via `accessibilityValueFormatter: ((Float) -> String)?` (default
+  "%.2f"). VoiceOver puede ajustar el valor con swipes verticales —
+  `accessibilityIncrement()` y `Decrement()` mueven en pasos de
+  `accessibilityStepFraction` (default 5% del rango) y disparan
+  `.valueChanged` para que el ProjectController escriba el cambio.
+- `ChipsFader`: misma API que `ChipsKnob` — adjustable, formatter
+  opcional, increment/decrement.
+- `ChipsButton`: `traits = .button`, `accessibilityLabel` espejea
+  `title`. La app puede sobreescribirlo (e.g. botones M / S del mixer
+  exponen "Mute" / "Solo" en lugar de la letra cruda).
+- `ChipsIconButton`: `traits = .button`. Cuando `isSelected == true`,
+  añade `.selected` a `traits` — VoiceOver lee "Sequencer, selected"
+  para la sección activa de la sidebar.
+- `ChipsTransportButton`: `accessibilityLabel = "Play"` o `"Stop"`
+  según el `kind`. (No usa `bundle: .module` para no requerir setup
+  de resources en el package; la app puede sobreescribir si quiere
+  localizar.)
+- `SidebarView`: cada `ChipsIconButton` recibe `section.title` como
+  label — VoiceOver navega la sidebar leyendo "Sequencer", "Mixer", …
+- `MixerSectionViewController`:
+  - Fader: label "Track N gain", value formateado como porcentaje.
+  - PanKnob: value formateado como "Center" / "Left 30%" / "Right 60%".
+  - M / S buttons: labels explícitos "Mute" / "Solo".
+- `GenericInstrumentPanelViewController`: knobs auto-generados usan
+  `spec.unit` en el formatter ("0.50 Hz", "1.20 dB") — refleja la
+  metadata real del DSP.
+- Tests (`Packages/ChipsUIKit/Tests/`):
+  - Knob/Fader: traits, label/value, increment/decrement, clamp,
+    eventos `.valueChanged` se disparan al ajustar via VoiceOver.
+  - Button: label espejea title, trait `.button`.
+  - IconButton: trait `.selected` reflejea isSelected.
+  - TransportButton: defaults Play/Stop.
+
+Sin tocar el AppShell ni el ProjectController. App-side el wireado
+es en MixerSectionViewController y SidebarView. Falta wireado fino
+en SynthesizerSectionViewController (knobs específicos del synth)
+— próximo PR.
+
 ### M11-A — Privacy manifest + StoreKit 2 scaffold + About screen
 - `Chips/PrivacyInfo.xcprivacy`: declara `NSPrivacyAccessedAPICategorySystemBootTime`
   con razón `35F9.1` por usar `CACurrentMediaTime()` en `SequencerEngine`

@@ -22,8 +22,20 @@ public final class ChipsKnob: ChipsControl {
     }
 
     public var label: String? {
-        didSet { labelView.text = label?.uppercased() }
+        didSet {
+            labelView.text = label?.uppercased()
+            accessibilityLabel = label
+        }
     }
+
+    /// Closure opcional para formatear el `accessibilityValue`. Si es nil, se
+    /// usa "%.2f" — el caller normalmente lo sobreescribe con la unidad real
+    /// (Hz, dB, %, etc.) para que VoiceOver lea el valor en contexto.
+    public var accessibilityValueFormatter: ((Float) -> String)?
+
+    /// Tamaño de paso al ajustar via VoiceOver (accessibilityIncrement /
+    /// Decrement). Default 5% del rango.
+    public var accessibilityStepFraction: Float = 0.05
 
     private let labelView = UILabel()
 
@@ -39,6 +51,30 @@ public final class ChipsKnob: ChipsControl {
             labelView.trailingAnchor.constraint(equalTo: trailingAnchor),
             labelView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
+        isAccessibilityElement = true
+        accessibilityTraits = .adjustable
+    }
+
+    override public var accessibilityValue: String? {
+        get {
+            if let accessibilityValueFormatter {
+                return accessibilityValueFormatter(value)
+            }
+            return String(format: "%.2f", value)
+        }
+        set { super.accessibilityValue = newValue }
+    }
+
+    override public func accessibilityIncrement() {
+        let step = max(0.0001, accessibilityStepFraction) * (maxValue - minValue)
+        value = max(minValue, min(maxValue, value + step))
+        sendActions(for: .valueChanged)
+    }
+
+    override public func accessibilityDecrement() {
+        let step = max(0.0001, accessibilityStepFraction) * (maxValue - minValue)
+        value = max(minValue, min(maxValue, value - step))
+        sendActions(for: .valueChanged)
     }
 
     override public func draw(_ rect: CGRect) {

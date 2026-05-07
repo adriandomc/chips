@@ -92,6 +92,10 @@ final class GenericInstrumentPanelViewController: UIViewController {
         knob.maxValue = spec.maxValue
         let initial = controller.parameter(of: ref, name: spec.name) ?? spec.defaultValue
         knob.value = initial
+        let unit = spec.unit
+        knob.accessibilityValueFormatter = { value in
+            unit.isEmpty ? String(format: "%.2f", value) : String(format: "%.2f %@", value, unit)
+        }
         knob.translatesAutoresizingMaskIntoConstraints = false
         knob.heightAnchor.constraint(equalToConstant: 84).isActive = true
         let action = UIAction { [weak self, weak knob] _ in

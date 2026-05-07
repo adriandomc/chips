@@ -16,6 +16,41 @@ public final class ChipsFader: ChipsControl {
         didSet { setNeedsDisplay() }
     }
 
+    /// Closure opcional para formatear el `accessibilityValue`. Útil para
+    /// presentar dB en lugar de un float plano.
+    public var accessibilityValueFormatter: ((Float) -> String)?
+
+    /// Tamaño de paso al ajustar via VoiceOver. Default 5% del rango.
+    public var accessibilityStepFraction: Float = 0.05
+
+    override public init(frame: CGRect) {
+        super.init(frame: frame)
+        isAccessibilityElement = true
+        accessibilityTraits = .adjustable
+    }
+
+    override public var accessibilityValue: String? {
+        get {
+            if let accessibilityValueFormatter {
+                return accessibilityValueFormatter(value)
+            }
+            return String(format: "%.2f", value)
+        }
+        set { super.accessibilityValue = newValue }
+    }
+
+    override public func accessibilityIncrement() {
+        let step = max(0.0001, accessibilityStepFraction) * (maxValue - minValue)
+        value = max(minValue, min(maxValue, value + step))
+        sendActions(for: .valueChanged)
+    }
+
+    override public func accessibilityDecrement() {
+        let step = max(0.0001, accessibilityStepFraction) * (maxValue - minValue)
+        value = max(minValue, min(maxValue, value - step))
+        sendActions(for: .valueChanged)
+    }
+
     override public func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         // Track central.

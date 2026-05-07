@@ -12,6 +12,11 @@ public final class ChipsTransportButton: ChipsControl {
     public init(kind: Kind) {
         self.kind = kind
         super.init(frame: .zero)
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        // Default en. La app puede sobreescribirlo con la string localizada
+        // tras instanciar (suelen ser solo dos botones globales).
+        accessibilityLabel = (kind == .play) ? "Play" : "Stop"
     }
 
     @available(*, unavailable)

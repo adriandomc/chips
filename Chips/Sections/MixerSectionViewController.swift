@@ -117,14 +117,25 @@ private final class ChannelStripView: UIView {
         let sendsRow = makeSendsRow()
         let sendsLabel = makeSendsLabel()
         fader.value = initialGain()
+        // VoiceOver: anuncia "Track 1, gain, 80%" en vez del valor crudo.
+        fader.accessibilityLabel = "\(label) gain"
+        fader.accessibilityValueFormatter = { value in String(format: "%.0f%%", value * 100) }
 
         panKnob.label = "Pan"
         panKnob.minValue = -1
         panKnob.maxValue = 1
         panKnob.value = initialPan()
+        panKnob.accessibilityValueFormatter = { value in
+            if abs(value) < 0.01 { return "Center" }
+            return value < 0
+                ? String(format: "Left %.0f%%", -value * 100)
+                : String(format: "Right %.0f%%", value * 100)
+        }
 
         let soloButton = makeSmallButton(title: "S")
+        soloButton.accessibilityLabel = "Solo"
         muteButton.title = "M"
+        muteButton.accessibilityLabel = "Mute"
         muteButton.titleFont = ChipsTheme.Font.mono(size: 10, weight: .semibold)
         muteButton.contentInsets = .init(top: 2, left: 6, bottom: 2, right: 6)
 

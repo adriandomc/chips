@@ -13,6 +13,7 @@ final class SidebarView: UIView {
             b.systemImageName = section.iconName
             b.iconSize = 22
             b.tintForeground = ChipsTheme.textOnDark
+            b.accessibilityLabel = section.title
             return b
         }
         super.init(frame: .zero)
