@@ -65,22 +65,27 @@ public struct Pattern: Codable, Sendable, Identifiable {
     }
 }
 
-/// Un track tiene un nombre, color, y una lista de patterns (M5: 1 pattern por track).
+/// Un track tiene un nombre, color, una lista de patterns (M5: 1 por track),
+/// y opcionalmente una referencia al instrumento que dispara sus notas
+/// (`instrumentRef`). Si es `nil` el sequencer no enruta notas para este track.
 public struct Track: Codable, Sendable, Identifiable {
     public let id: UUID
     public var name: String
     public var colorIndex: Int
     public var patterns: [Pattern]
+    public var instrumentRef: UUID?
 
     public init(
         id: UUID = UUID(),
         name: String,
         colorIndex: Int,
-        patterns: [Pattern] = []
+        patterns: [Pattern] = [],
+        instrumentRef: UUID? = nil
     ) {
         self.id = id
         self.name = name
         self.colorIndex = colorIndex
         self.patterns = patterns
+        self.instrumentRef = instrumentRef
     }
 }

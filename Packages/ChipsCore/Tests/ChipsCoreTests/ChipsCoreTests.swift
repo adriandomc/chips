@@ -122,6 +122,86 @@ final class ChipsCoreTests: XCTestCase {
         try? FileManager.default.removeItem(at: url)
     }
 
+    func testProjectGraphRoundTrip() throws {
+        let synthRef = UUID()
+        var graph = ProjectGraph(
+            name: "demo",
+            author: "me",
+            tempoBpm: 110,
+            nodes: [
+                NodeInstance(id: synthRef, typeId: "additive_synth", parameters: ["volume": 0.7]),
+                NodeInstance(typeId: "delay", parameters: ["wet": 0.4]),
+            ]
+        )
+        var pattern = Pattern(name: "p", lengthTicks: 1920)
+        pattern.addNote(PatternNote(startTick: 0, lengthTicks: 60, midi: 60))
+        graph.tracks = [Track(name: "T1", colorIndex: 0, patterns: [pattern], instrumentRef: synthRef)]
+
+        let data = try ProjectStorage.encode(graph)
+        let decoded = try ProjectStorage.decodeProject(data)
+        XCTAssertEqual(decoded.schemaVersion, 2)
+        XCTAssertEqual(decoded.name, "demo")
+        XCTAssertEqual(decoded.tempoBpm, 110)
+        XCTAssertEqual(decoded.nodes.count, 2)
+        XCTAssertEqual(decoded.nodes.first(where: { $0.typeId == "additive_synth" })?.parameters["volume"], 0.7)
+        XCTAssertEqual(decoded.tracks.first?.instrumentRef, synthRef)
+    }
+
+    func testProjectMigratorBuildsExpectedChain() {
+        var v1 = ProjectSnapshot(name: "legacy", author: "x", tempoBpm: 130)
+        v1.synth.attack = 0.05
+        v1.delay.wet = 0.5
+        v1.reverb.roomSize = 0.9
+        var pattern = Pattern(name: "p", lengthTicks: 480)
+        pattern.addNote(PatternNote(startTick: 0, lengthTicks: 60, midi: 60))
+        v1.tracks = [Track(name: "T1", colorIndex: 0, patterns: [pattern])]
+
+        let graph = ProjectMigrator.migrateV1ToV2(v1)
+        XCTAssertEqual(graph.schemaVersion, 2)
+        XCTAssertEqual(graph.tempoBpm, 130)
+        XCTAssertEqual(graph.nodes.count, 4)
+
+        let types = Set(graph.nodes.map(\.typeId))
+        XCTAssertEqual(types, ["additive_synth", "mixer", "delay", "reverb"])
+
+        let synth = graph.node(matching: "additive_synth")
+        XCTAssertEqual(synth?.parameters["attack"], 0.05)
+
+        // 6 conexiones esperadas en la cadena heredada.
+        XCTAssertEqual(graph.connections.count, 6)
+        XCTAssertEqual(graph.outputNodeRef, graph.node(matching: "reverb")?.id)
+
+        // Tracks heredados se enrutan al synth migrado.
+        XCTAssertEqual(graph.tracks.first?.instrumentRef, synth?.id)
+    }
+
+    func testProjectStorageAutomigratesV1Payload() throws {
+        let v1 = ProjectSnapshot(name: "imported", author: "a", tempoBpm: 100)
+        let data = try ProjectStorage.encode(v1)
+        let graph = try ProjectStorage.decodeProject(data)
+        XCTAssertEqual(graph.schemaVersion, 2)
+        XCTAssertEqual(graph.name, "imported")
+        XCTAssertEqual(graph.tempoBpm, 100)
+        XCTAssertEqual(graph.nodes.count, 4)
+    }
+
+    func testProjectStorageRejectsFutureGraphSchema() {
+        let payload = #"""
+        {"schemaVersion":99,"name":"x","author":"","tempoBpm":120,
+        "nodes":[],"connections":[],"tracks":[]}
+        """#
+        let data = Data(payload.utf8)
+        XCTAssertThrowsError(try ProjectStorage.decodeProject(data))
+    }
+
+    func testTrackInstrumentRefRoundTripsThroughCodable() throws {
+        let ref = UUID()
+        let track = Track(name: "T", colorIndex: 0, instrumentRef: ref)
+        let data = try JSONEncoder().encode(track)
+        let decoded = try JSONDecoder().decode(Track.self, from: data)
+        XCTAssertEqual(decoded.instrumentRef, ref)
+    }
+
     @MainActor
     func testSequencerEngineDelegateReceivesNoteEvents() {
         final class Spy: SequencerEngineDelegate {

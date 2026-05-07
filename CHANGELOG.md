@@ -5,6 +5,38 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### R2 — Modular foundation: ProjectGraph dinámico + migrator v1→v2 (en curso)
+- ChipsCore: `ProjectGraph` (Codable, schemaVersion=2). Modelo serializable
+  del grafo del proyecto: lista de `NodeInstance` (typeId + displayName +
+  diccionario `parameters: [String: Float]`), lista de `ConnectionDescriptor`
+  (src/srcPort → dst/dstPort), `outputNodeRef`, `tracks`.
+- `NodeRef = UUID`: identidad estable que sobrevive al rebuild del grafo
+  C++ (los `ChipsNodeId` UInt32 son efímeros, asignados por `addNode`).
+- `Track` extendido con `instrumentRef: NodeRef?`. Default nil; sequencer
+  no enruta notas si es nil. R3 lo aprovechará para multi-instrumento.
+- `ProjectMigrator.migrateV1ToV2` reproduce la cadena heredada
+  (synth → mixer → delay → reverb → output) como nodos+conexiones
+  explícitas, copiando todos los parámetros por nombre. Tracks heredados
+  se enrutan al synth migrado.
+- `ProjectStorage` ahora soporta ambos formatos:
+  - `encode(_:ProjectGraph)` y `encode(_:ProjectSnapshot)` (legacy).
+  - `decodeProject(_:)` auto-detecta `schemaVersion`: v1 se migra
+    transparentemente; v2 directo; otros valores → throw.
+  - `decode(_:)` legacy mantenido para AudioCoordinator hasta R3.
+- ProjectSnapshot v1 se mantiene intacto; ningún proyecto guardado se
+  rompe por este cambio.
+
+Tests offline (5):
+- ProjectGraph round-trip Codable (4 nodos + 1 track).
+- Migrator produce 4 nodos / 6 conexiones / output=reverb.
+- decodeProject sobre payload v1 devuelve graph v2 con 4 nodos.
+- decodeProject rechaza schemas futuros (v99).
+- Track.instrumentRef sobrevive Codable.
+
+Sin cambios en el motor C++ ni en la app — R2 es exclusivamente del
+modelo de datos. R3 introducirá `ProjectController` que consume este
+modelo y reemplaza `AudioCoordinator`.
+
 ### R1 — Modular foundation: ModuleRegistry + metadata API (en curso)
 - C++ `ModuleRegistry` singleton self-registering. Cada módulo añade un
   registro estático en su `.cpp` (con `[[gnu::used]]`); para asegurar

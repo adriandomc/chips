@@ -116,8 +116,39 @@ public enum ProjectStorageError: Error {
     case invalidData
 }
 
+private struct SchemaHeader: Decodable {
+    let schemaVersion: Int
+}
+
 public enum ProjectStorage {
     public static let fileExtension = "chips"
+
+    // MARK: ProjectGraph (v2) — formato actual
+
+    public static func encode(_ graph: ProjectGraph) throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(graph)
+    }
+
+    /// Decodifica un proyecto. Auto-detecta la versión: v1 se migra a v2
+    /// transparentemente; v2 se decodifica directo. Versiones desconocidas
+    /// (futuras o inválidas) lanzan `unsupportedSchemaVersion`.
+    public static func decodeProject(_ data: Data) throws -> ProjectGraph {
+        let header = try JSONDecoder().decode(SchemaHeader.self, from: data)
+        switch header.schemaVersion {
+        case 1:
+            let v1 = try JSONDecoder().decode(ProjectSnapshot.self, from: data)
+            return ProjectMigrator.migrateV1ToV2(v1)
+        case 2:
+            return try JSONDecoder().decode(ProjectGraph.self, from: data)
+        default:
+            throw ProjectStorageError.unsupportedSchemaVersion(header.schemaVersion)
+        }
+    }
+
+    // MARK: ProjectSnapshot (v1) — legacy, usado todavía por AudioCoordinator
+    // hasta que R3 lo reemplace por ProjectController.
 
     public static func encode(_ snapshot: ProjectSnapshot) throws -> Data {
         let encoder = JSONEncoder()
