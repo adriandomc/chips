@@ -58,6 +58,12 @@ final class AppShellViewController: UIViewController {
         topBar.playButton.addTarget(self, action: #selector(playTapped), for: .touchUpInside)
         topBar.stopButton.addTarget(self, action: #selector(stopTapped), for: .touchUpInside)
 
+        // Reflejar transport en el timecode label.
+        coordinator.onTimecodeChange = { [weak self] formatted in
+            self?.topBar.timecode.text = formatted
+        }
+        topBar.timecode.text = coordinator.transport.formatted
+
         show(section: .sequencer)
         sidebar.setSelected(.sequencer)
     }
@@ -69,7 +75,7 @@ final class AppShellViewController: UIViewController {
         case .sequencer: SequencerSectionViewController()
         case .mixer: MixerSectionViewController()
         case .synthesizer: SynthesizerSectionViewController(coordinator: coordinator)
-        case .grid: GridSectionViewController()
+        case .grid: GridSectionViewController(coordinator: coordinator)
         case .settings: SettingsSectionViewController()
         case .help: HelpSectionViewController()
         }
@@ -96,7 +102,7 @@ final class AppShellViewController: UIViewController {
     }
 
     @objc private func playTapped() {
-        coordinator.start()
+        coordinator.play()
     }
 
     @objc private func stopTapped() {
