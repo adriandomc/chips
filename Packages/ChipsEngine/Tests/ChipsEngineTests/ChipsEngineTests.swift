@@ -415,6 +415,48 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertFalse(engine.compile()) // ya no hay output node
     }
 
+    func testFrameOffsetDelaysNoteWithinBlock() throws {
+        // M5.5: un noteOn con frameOffset > 0 no debe producir audio antes de ese
+        // frame. Renderizamos un bloque grande con frameOffset = mitad del bloque
+        // y comparamos energía en la primera mitad vs segunda mitad.
+        let bigFrames = 1024
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: bigFrames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.setOutputNode(synth)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 1.0)
+        engine.setParameter(synth, additive: .attack, value: 0.0001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+
+        // Note on en la mitad del bloque (sample 512).
+        let offset: UInt32 = 512
+        _ = engine.sendNoteOn(synth, midi: 60, velocity: 1.0, frameOffset: offset)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: bigFrames * 2)
+        defer { buffer.deallocate() }
+        engine.render(into: buffer, frames: bigFrames)
+
+        var rmsFirstHalf: Double = 0
+        var rmsSecondHalf: Double = 0
+        for i in 0 ..< bigFrames {
+            let l = Double(buffer[i * 2])
+            let r = Double(buffer[i * 2 + 1])
+            let sq = l * l + r * r
+            if i < Int(offset) {
+                rmsFirstHalf += sq
+            } else {
+                rmsSecondHalf += sq
+            }
+        }
+        rmsFirstHalf = (rmsFirstHalf / Double(2 * Int(offset))).squareRoot()
+        rmsSecondHalf = (rmsSecondHalf / Double(2 * (bigFrames - Int(offset)))).squareRoot()
+        XCTAssertLessThan(rmsFirstHalf, 0.001)        // silencio antes del offset
+        XCTAssertGreaterThan(rmsSecondHalf, 0.05)     // audio después del offset
+    }
+
     func testNoteEventToUnknownNodeIsDropped() throws {
         // M2.5: dispatch indexado por nodeId. Un evento a un nodeId que no
         // existe en el plan se descarta silenciosamente, sin afectar al render

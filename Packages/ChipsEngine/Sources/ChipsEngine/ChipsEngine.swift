@@ -191,6 +191,24 @@ public final class ChipsEngine: @unchecked Sendable {
         chips_engine_send_note_off(handle, id, Int32(midi))
     }
 
+    /// Variantes con `frameOffset` para scheduling sample-accurate.
+    /// `frameOffset` se interpreta en samples desde el inicio del próximo render().
+    /// Pasa 0 para semántica idéntica a las versiones sin offset.
+    @discardableResult
+    public func setParameter(_ id: ChipsNodeId, paramId: UInt32, value: Float, frameOffset: UInt32) -> Bool {
+        chips_engine_set_parameter_at(handle, id, paramId, value, frameOffset)
+    }
+
+    @discardableResult
+    public func sendNoteOn(_ id: ChipsNodeId, midi: Int, velocity: Float, frameOffset: UInt32) -> Bool {
+        chips_engine_send_note_on_at(handle, id, Int32(midi), velocity, frameOffset)
+    }
+
+    @discardableResult
+    public func sendNoteOff(_ id: ChipsNodeId, midi: Int, frameOffset: UInt32) -> Bool {
+        chips_engine_send_note_off_at(handle, id, Int32(midi), frameOffset)
+    }
+
     // MARK: Introspección
 
     /// Lista de typeIds registrados en el motor en el momento de creación.

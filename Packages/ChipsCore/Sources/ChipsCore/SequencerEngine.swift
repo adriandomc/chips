@@ -9,15 +9,19 @@ public protocol SequencerEngineDelegate: AnyObject {
     func sequencer(positionDidChange tick: Int64)
 }
 
-/// Motor de secuencia que avanza el transport en tiempo real (control thread,
-/// no sample-accurate). Para M5 este nivel de precisión basta; M2.5/M5.5 puede
-/// migrar el scheduling al audio thread vía SPSC.
+/// Motor de secuencia que avanza el transport en tiempo real. Tras M5.5 corre
+/// con un timer de 500 Hz (jitter inter-buffer ~2 ms) y emite eventos al
+/// delegate; el dispatch sample-accurate intra-buffer se delega al motor C++
+/// vía `frameOffset` en el SPSC del Graph.
 @MainActor
 public final class SequencerEngine {
     public private(set) var transport = TransportState()
     public private(set) var tracks: [Track] = []
 
     public weak var delegate: (any SequencerEngineDelegate)?
+
+    /// Frecuencia del timer de scheduling. 500 Hz = jitter inter-buffer ~2 ms.
+    public static let tickHz: Double = 500.0
 
     private var timer: Timer?
     private var lastTickTime: TimeInterval = 0
@@ -45,7 +49,7 @@ public final class SequencerEngine {
         transport.isPlaying = true
         lastTickTime = CACurrentMediaTime()
         fractionalTicks = 0
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 100.0, repeats: true) { [weak self] _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / Self.tickHz, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated {
                 self?.tick()
             }

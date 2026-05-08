@@ -24,6 +24,10 @@ struct ParameterEvent {
     NodeId nodeId;
     uint32_t paramOrMidi;
     float value;
+    /// Offset en samples desde el inicio del próximo render() en el que se
+    /// debe disparar el evento. Permite scheduling sample-accurate dentro
+    /// de un buffer. Default 0 = al inicio del render.
+    uint32_t frameOffset = 0;
 };
 
 class Graph {
@@ -62,11 +66,12 @@ public:
 
     /// Encola un cambio de parámetro (control thread). Devuelve false si la cola
     /// está llena (drop policy: el cambio se pierde, llamador debe reintentar).
-    bool postParameter(NodeId nodeId, uint32_t paramId, float value);
+    /// `frameOffset` permite scheduling sample-accurate dentro del próximo render.
+    bool postParameter(NodeId nodeId, uint32_t paramId, float value, uint32_t frameOffset = 0);
 
     /// Encola una nota MIDI on/off para el nodo dado.
-    bool postNoteOn(NodeId nodeId, int midi, float velocity);
-    bool postNoteOff(NodeId nodeId, int midi);
+    bool postNoteOn(NodeId nodeId, int midi, float velocity, uint32_t frameOffset = 0);
+    bool postNoteOff(NodeId nodeId, int midi, uint32_t frameOffset = 0);
 
     /// RT-safe: renderiza `frames` muestras al buffer interleaved stereo.
     void render(float* interleavedStereoOut, int frames);
@@ -89,6 +94,8 @@ private:
         IModule* module;
         std::vector<const float*> inputs;  // pointers a buffers del pool (o nullptr para silencio)
         std::vector<float*> outputs;       // pointers a buffers del pool
+        std::vector<const float*> inputsView;  // pre-asignado, mutado por sub-bloque
+        std::vector<float*> outputsView;       // pre-asignado, mutado por sub-bloque
         int numInputs;
         int numOutputs;
     };

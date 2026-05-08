@@ -70,6 +70,15 @@ bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uin
 bool chips_engine_send_note_on(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity);
 bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int midi);
 
+/// Versiones con `frame_offset` (samples desde el inicio del próximo render)
+/// para scheduling sample-accurate. Pase 0 para semántica idéntica a las
+/// versiones sin offset.
+bool chips_engine_set_parameter_at(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value,
+                                   uint32_t frame_offset);
+bool chips_engine_send_note_on_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity,
+                                  uint32_t frame_offset);
+bool chips_engine_send_note_off_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, uint32_t frame_offset);
+
 // ---- Introspección de módulos ----
 
 /// Devuelve el typeId del nodo (string estable). NULL si el nodo no existe.

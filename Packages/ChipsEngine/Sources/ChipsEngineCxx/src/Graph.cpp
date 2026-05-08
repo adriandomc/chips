@@ -3,6 +3,7 @@
 #include "Graph.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <queue>
 #include <unordered_map>
@@ -95,17 +96,18 @@ IModule* Graph::node(NodeId id) {
     return n == nullptr ? nullptr : n->module.get();
 }
 
-bool Graph::postParameter(NodeId nodeId, uint32_t paramId, float value) {
-    return paramQueue_.push(ParameterEvent{ParameterEvent::Kind::Param, nodeId, paramId, value});
+bool Graph::postParameter(NodeId nodeId, uint32_t paramId, float value, uint32_t frameOffset) {
+    return paramQueue_.push(ParameterEvent{ParameterEvent::Kind::Param, nodeId, paramId, value, frameOffset});
 }
 
-bool Graph::postNoteOn(NodeId nodeId, int midi, float velocity) {
+bool Graph::postNoteOn(NodeId nodeId, int midi, float velocity, uint32_t frameOffset) {
     return paramQueue_.push(
-        ParameterEvent{ParameterEvent::Kind::NoteOn, nodeId, static_cast<uint32_t>(midi), velocity});
+        ParameterEvent{ParameterEvent::Kind::NoteOn, nodeId, static_cast<uint32_t>(midi), velocity, frameOffset});
 }
 
-bool Graph::postNoteOff(NodeId nodeId, int midi) {
-    return paramQueue_.push(ParameterEvent{ParameterEvent::Kind::NoteOff, nodeId, static_cast<uint32_t>(midi), 0.0f});
+bool Graph::postNoteOff(NodeId nodeId, int midi, uint32_t frameOffset) {
+    return paramQueue_.push(
+        ParameterEvent{ParameterEvent::Kind::NoteOff, nodeId, static_cast<uint32_t>(midi), 0.0f, frameOffset});
 }
 
 bool Graph::compile() {
@@ -187,6 +189,8 @@ bool Graph::compile() {
         pn.numOutputs = numOut;
         pn.inputs.assign(static_cast<size_t>(numIn), nullptr);
         pn.outputs.assign(static_cast<size_t>(numOut), nullptr);
+        pn.inputsView.assign(static_cast<size_t>(numIn), nullptr);
+        pn.outputsView.assign(static_cast<size_t>(numOut), nullptr);
         for (int p = 0; p < numOut; ++p) {
             pn.outputs[static_cast<size_t>(p)] = plan->bufferPool.buffer(outputBufferIndex[key(id, p)]);
         }
@@ -236,43 +240,88 @@ void Graph::render(float* interleavedStereoOut, int frames) {
         return;
     }
 
-    // Drain de eventos: dispatch indexado por nodeId via plan->nodeIndex.
-    // Eventos para nodos no presentes en el plan actual se descartan silenciosamente
-    // (puede ocurrir si el plan se recompiló mientras el evento estaba en cola).
+    // Drain de eventos a un buffer en pila. Ordenar por frameOffset (stable
+    // sort preserva el orden de envío para mismo offset). 256 eventos por
+    // bloque es de sobra para uso típico (sequencer + UI + MIDI input).
+    constexpr int kMaxEventsPerBlock = 256;
+    std::array<ParameterEvent, kMaxEventsPerBlock> events;
+    int eventCount = 0;
     {
         ParameterEvent ev;
-        while (paramQueue_.pop(ev)) {
-            auto it = plan->nodeIndex.find(ev.nodeId);
-            if (it == plan->nodeIndex.end()) {
-                continue;
-            }
-            IModule* module = plan->nodes[static_cast<size_t>(it->second)].module;
-            switch (ev.kind) {
-            case ParameterEvent::Kind::Param:
-                module->handleParameterChange(ev.paramOrMidi, ev.value);
-                break;
-            case ParameterEvent::Kind::NoteOn:
-                module->handleNoteOn(static_cast<int>(ev.paramOrMidi), ev.value);
-                break;
-            case ParameterEvent::Kind::NoteOff:
-                module->handleNoteOff(static_cast<int>(ev.paramOrMidi));
-                break;
-            }
+        while (eventCount < kMaxEventsPerBlock && paramQueue_.pop(ev)) {
+            events[static_cast<size_t>(eventCount++)] = ev;
         }
     }
+    if (eventCount > 1) {
+        std::stable_sort(events.begin(), events.begin() + eventCount,
+                         [](const ParameterEvent& a, const ParameterEvent& b) {
+                             return a.frameOffset < b.frameOffset;
+                         });
+    }
+
+    auto applyEvent = [plan](const ParameterEvent& ev) {
+        auto it = plan->nodeIndex.find(ev.nodeId);
+        if (it == plan->nodeIndex.end()) {
+            return;
+        }
+        IModule* module = plan->nodes[static_cast<size_t>(it->second)].module;
+        switch (ev.kind) {
+        case ParameterEvent::Kind::Param:
+            module->handleParameterChange(ev.paramOrMidi, ev.value);
+            break;
+        case ParameterEvent::Kind::NoteOn:
+            module->handleNoteOn(static_cast<int>(ev.paramOrMidi), ev.value);
+            break;
+        case ParameterEvent::Kind::NoteOff:
+            module->handleNoteOff(static_cast<int>(ev.paramOrMidi));
+            break;
+        }
+    };
 
     ProcessContext ctx{};
-    ctx.frames = frames;
     ctx.sampleRate = sampleRate_;
     ctx.tickPosition = 0;
     ctx.tempoBpm = 120.0;
 
-    for (auto& pn : plan->nodes) {
-        ctx.audioIn = pn.inputs.empty() ? nullptr : pn.inputs.data();
-        ctx.audioOut = pn.outputs.empty() ? nullptr : pn.outputs.data();
-        ctx.numAudioIn = pn.numInputs;
-        ctx.numAudioOut = pn.numOutputs;
-        pn.module->process(ctx);
+    int cursor = 0;
+    int evIdx = 0;
+    while (cursor < frames) {
+        // Disparar todos los eventos cuyo frameOffset ya está alcanzado.
+        while (evIdx < eventCount && static_cast<int>(events[static_cast<size_t>(evIdx)].frameOffset) <= cursor) {
+            applyEvent(events[static_cast<size_t>(evIdx++)]);
+        }
+        // Próximo límite: o el siguiente evento, o el final del bloque.
+        int subEnd = frames;
+        if (evIdx < eventCount) {
+            int nextOff = static_cast<int>(events[static_cast<size_t>(evIdx)].frameOffset);
+            if (nextOff > cursor && nextOff < frames) {
+                subEnd = nextOff;
+            }
+        }
+        const int subFrames = subEnd - cursor;
+
+        ctx.frames = subFrames;
+        for (auto& pn : plan->nodes) {
+            for (int p = 0; p < pn.numInputs; ++p) {
+                pn.inputsView[static_cast<size_t>(p)] = pn.inputs[static_cast<size_t>(p)] + cursor;
+            }
+            for (int p = 0; p < pn.numOutputs; ++p) {
+                pn.outputsView[static_cast<size_t>(p)] = pn.outputs[static_cast<size_t>(p)] + cursor;
+            }
+            ctx.audioIn = pn.inputsView.empty() ? nullptr : pn.inputsView.data();
+            ctx.audioOut = pn.outputsView.empty() ? nullptr : pn.outputsView.data();
+            ctx.numAudioIn = pn.numInputs;
+            ctx.numAudioOut = pn.numOutputs;
+            pn.module->process(ctx);
+        }
+        cursor = subEnd;
+    }
+
+    // Eventos cuyo frameOffset cayó al final o más allá del bloque: se aplican
+    // ya como pre-roll del próximo render. El módulo reaccionará en el próximo
+    // bloque, lo cual es correcto.
+    while (evIdx < eventCount) {
+        applyEvent(events[static_cast<size_t>(evIdx++)]);
     }
 
     const float* l = plan->outputL;

@@ -177,6 +177,29 @@ bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int
     return engine->graph.postNoteOff(node, midi);
 }
 
+bool chips_engine_set_parameter_at(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value,
+                                   uint32_t frame_offset) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postParameter(node, param_id, value, frame_offset);
+}
+
+bool chips_engine_send_note_on_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity,
+                                  uint32_t frame_offset) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postNoteOn(node, midi, velocity, frame_offset);
+}
+
+bool chips_engine_send_note_off_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, uint32_t frame_offset) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postNoteOff(node, midi, frame_offset);
+}
+
 // ---- Introspección (R1) ----
 
 const char* chips_engine_node_type_id(ChipsEngineHandle* engine, ChipsNodeId node) {
