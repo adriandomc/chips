@@ -305,9 +305,46 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertTrue(types.contains("test_source"))
         XCTAssertTrue(types.contains("additive_synth"))
         XCTAssertTrue(types.contains("subtractive_synth"))
+        XCTAssertTrue(types.contains("fm_synth"))
+        XCTAssertTrue(types.contains("wavetable_synth"))
+        XCTAssertTrue(types.contains("beatbox"))
         XCTAssertTrue(types.contains("mixer"))
         XCTAssertTrue(types.contains("delay"))
         XCTAssertTrue(types.contains("reverb"))
+    }
+
+    private func renderRMS(typeId: String, midi: Int, blocks: Int = 8) throws -> Double {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let node = engine.addNode(typeId: typeId) else { return 0 }
+        engine.setOutputNode(node)
+        XCTAssertTrue(engine.compile())
+        _ = engine.sendNoteOn(node, midi: midi, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        var sumSquares: Double = 0
+        for _ in 0 ..< blocks {
+            engine.render(into: buffer, frames: frames)
+            for i in 0 ..< frames * 2 {
+                sumSquares += Double(buffer[i] * buffer[i])
+            }
+        }
+        return (sumSquares / Double(blocks * frames * 2)).squareRoot()
+    }
+
+    func testFMSynthRendersAfterNoteOn() throws {
+        let rms = try renderRMS(typeId: "fm_synth", midi: 60)
+        XCTAssertGreaterThan(rms, 0.01)
+    }
+
+    func testWavetableSynthRendersAfterNoteOn() throws {
+        let rms = try renderRMS(typeId: "wavetable_synth", midi: 60)
+        XCTAssertGreaterThan(rms, 0.01)
+    }
+
+    func testBeatBoxRendersAfterKickTrigger() throws {
+        let rms = try renderRMS(typeId: "beatbox", midi: 36, blocks: 4)
+        XCTAssertGreaterThan(rms, 0.01)
     }
 
     func testSubtractiveSynthAutoRegisters() throws {

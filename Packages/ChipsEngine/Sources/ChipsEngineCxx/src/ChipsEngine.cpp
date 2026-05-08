@@ -3,8 +3,10 @@
 #include "ChipsEngine/ChipsEngine.h"
 
 #include "AdditiveSynth.hpp"
+#include "BeatBox.hpp"
 #include "DelayModule.hpp"
 #include "DspLoadTracker.hpp"
+#include "FMSynth.hpp"
 #include "Graph.hpp"
 #include "MixerModule.hpp"
 #include "ModuleRegistry.hpp"
@@ -13,6 +15,7 @@
 #include "SineGenerator.hpp"
 #include "SubtractiveSynth.hpp"
 #include "TestSourceModule.hpp"
+#include "WavetableSynth.hpp"
 
 #include <cstring>
 #include <memory>
@@ -33,6 +36,9 @@ void touchAllModules() {
     chips::TestSourceModule::forceLink();
     chips::AdditiveSynth::forceLink();
     chips::SubtractiveSynth::forceLink();
+    chips::FMSynth::forceLink();
+    chips::WavetableSynth::forceLink();
+    chips::BeatBox::forceLink();
     chips::MixerModule::forceLink();
     chips::DelayModule::forceLink();
     chips::ReverbModule::forceLink();
