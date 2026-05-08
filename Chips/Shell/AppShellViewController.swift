@@ -9,6 +9,9 @@ final class AppShellViewController: UIViewController {
     private let contentContainer = UIView()
     private var currentChild: UIViewController?
     private var currentSection: AppSection = .sequencer
+    #if DEBUG
+    private var debugHUD: DebugHUDView?
+    #endif
 
     private let coordinator: ProjectController
 
@@ -66,6 +69,17 @@ final class AppShellViewController: UIViewController {
 
         show(section: .sequencer)
         sidebar.setSelected(.sequencer)
+
+        #if DEBUG
+        let hud = DebugHUDView(host: coordinator.host)
+        view.addSubview(hud)
+        NSLayoutConstraint.activate([
+            hud.trailingAnchor.constraint(equalTo: sidebar.leadingAnchor, constant: -8),
+            hud.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 8),
+        ])
+        hud.startPolling()
+        debugHUD = hud
+        #endif
     }
 
     private func show(section: AppSection) {

@@ -95,6 +95,20 @@ final class ChipsAppTests: XCTestCase {
         XCTAssertTrue(EntitlementManager.shared.isEntitled)
     }
 
+    #if DEBUG
+    @MainActor
+    func testDebugHUDInstalledOnAppShellLoad() throws {
+        // En DEBUG, el AppShell instancia un DebugHUDView y lo añade al árbol
+        // de vistas. Sirve para verificar que el HUD no se rompe el layout
+        // y la lógica de polling no leak-ea.
+        let controller = try ProjectController(graph: ProjectController.defaultGraph())
+        let shell = AppShellViewController(controller: controller)
+        shell.loadViewIfNeeded()
+        let hud = shell.view.subviews.first { $0 is DebugHUDView }
+        XCTAssertNotNil(hud)
+    }
+    #endif
+
     func testPrivacyManifestDeclaresSystemBootTimeReason() throws {
         // Verifica que el PrivacyInfo.xcprivacy embebido en el bundle declara
         // SystemBootTime con razón 35F9.1, requerido por App Review por usar

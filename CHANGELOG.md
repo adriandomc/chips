@@ -5,6 +5,19 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-G — Debug HUD overlay (DSP load, sample rate, buffer)
+- `Chips/Shell/DebugHUDView.swift`: vista flotante (DEBUG-only) que
+  muestra `"DSP X.X%  48kHz  256"` en la esquina superior derecha del
+  AppShell. Polling a 5 Hz vía `Timer` que lee `host.engine.dspLoad`.
+  Tap → colapsa a un punto. La clase entera vive bajo `#if DEBUG`, no
+  existe en builds Release.
+- `AppShellViewController`: en DEBUG monta el HUD anclado al sidebar
+  trailing y al topBar bottom. `startPolling()` arranca el timer.
+- Útil durante el primer test en device para ver si el grafo cabe en
+  el budget de CPU sin abrir Instruments.
+- Test (`#if DEBUG`): verifica que el HUD está montado en el subview
+  tree del shell tras `loadViewIfNeeded()`.
+
 ### M11-E — Device test readiness (AppIcon + run-on-device docs)
 - `Chips/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` (1024×1024):
   icono geométrico con la identidad del app — 4 tiles de la paleta cálida
