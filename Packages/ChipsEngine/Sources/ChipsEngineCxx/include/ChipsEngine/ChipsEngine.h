@@ -99,6 +99,16 @@ int chips_engine_registered_type_count(ChipsEngineHandle* engine);
 /// typeId registrado en el índice dado (0..count-1). NULL si fuera de rango.
 const char* chips_engine_registered_type_at(ChipsEngineHandle* engine, int index);
 
+// ---- Meters del mixer ----
+
+/// Peak del canal (post-gain/pan, pre-mezcla). Devuelve 0 si `node` no es un
+/// MixerModule, el canal está fuera de rango, o el engine es NULL.
+/// `is_left` selecciona L (true) o R (false). Lectura no-bloqueante.
+float chips_engine_mixer_channel_peak(ChipsEngineHandle* engine, ChipsNodeId node, int channel, bool is_left);
+
+/// Peak del bus master del mixer (post-suma).
+float chips_engine_mixer_master_peak(ChipsEngineHandle* engine, ChipsNodeId node, bool is_left);
+
 #ifdef __cplusplus
 }
 #endif

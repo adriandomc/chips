@@ -415,6 +415,43 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertFalse(engine.compile()) // ya no hay output node
     }
 
+    func testMixerChannelPeakReportsAudioLevel() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let mixer = engine.addNode(.mixer)
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: mixer, port: 0)
+        engine.connect(synth, port: 1, to: mixer, port: 1)
+        engine.setOutputNode(mixer)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 1.0)
+        engine.setParameter(synth, additive: .attack, value: 0.0001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+        engine.setMixerParameter(mixer, channel: 0, kind: .gain, value: 1.0)
+        _ = engine.sendNoteOn(synth, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+        }
+        let peakL = engine.mixerChannelPeak(mixer, channel: 0, isLeft: true)
+        let peakR = engine.mixerChannelPeak(mixer, channel: 0, isLeft: false)
+        XCTAssertGreaterThan(peakL, 0.05)
+        XCTAssertGreaterThan(peakR, 0.05)
+
+        // Tras mute + más renders, el peak decae.
+        engine.setMixerParameter(mixer, channel: 0, kind: .mute, value: 1)
+        _ = engine.sendNoteOff(synth, midi: 60)
+        for _ in 0 ..< 200 {
+            engine.render(into: buffer, frames: frames)
+        }
+        XCTAssertLessThan(engine.mixerChannelPeak(mixer, channel: 0, isLeft: true), 0.001)
+    }
+
     func testFrameOffsetDelaysNoteWithinBlock() throws {
         // M5.5: un noteOn con frameOffset > 0 no debe producir audio antes de ese
         // frame. Renderizamos un bloque grande con frameOffset = mitad del bloque

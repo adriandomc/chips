@@ -4,6 +4,8 @@ import UIKit
 
 final class MixerSectionViewController: UIViewController {
     private let controller: ProjectController
+    private var stripViews: [ChannelStripView] = []
+    private var meterDisplayLink: CADisplayLink?
 
     init(controller: ProjectController) {
         self.controller = controller
@@ -41,7 +43,8 @@ final class MixerSectionViewController: UIViewController {
                 channelIndex: i
             )
             row.addArrangedSubview(strip)
-            strip.widthAnchor.constraint(equalToConstant: 78).isActive = true
+            strip.widthAnchor.constraint(equalToConstant: 90).isActive = true
+            stripViews.append(strip)
         }
 
         NSLayoutConstraint.activate([
@@ -67,6 +70,33 @@ final class MixerSectionViewController: UIViewController {
         // Cada canal del MixerModule expone exactamente 3 specs (gain/pan/mute).
         return controller.host.engine.parameterCount(of: chipsId) / 3
     }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        let link = CADisplayLink(target: self, selector: #selector(updateMeters))
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 15, maximum: 30, preferred: 30)
+        link.add(to: .main, forMode: .common)
+        meterDisplayLink = link
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        meterDisplayLink?.invalidate()
+        meterDisplayLink = nil
+    }
+
+    @objc private func updateMeters() {
+        guard let mixerRef = controller.mixerRef,
+              let chipsId = controller.chipsNodeId(for: mixerRef)
+        else {
+            return
+        }
+        for (idx, strip) in stripViews.enumerated() {
+            let l = controller.host.engine.mixerChannelPeak(chipsId, channel: idx, isLeft: true)
+            let r = controller.host.engine.mixerChannelPeak(chipsId, channel: idx, isLeft: false)
+            strip.setMeterLevels(left: l, right: r)
+        }
+    }
 }
 
 private final class ChannelStripView: UIView {
@@ -76,6 +106,11 @@ private final class ChannelStripView: UIView {
     private let fader = ChipsFader()
     private let panKnob = ChipsKnob()
     private let muteButton = ChipsButton()
+    private let meterView = StereoMeterView()
+
+    func setMeterLevels(left: Float, right: Float) {
+        meterView.setLevels(left: left, right: right)
+    }
 
     init(label: String, controller: ProjectController?, channelIndex: Int?) {
         self.controller = controller
@@ -145,8 +180,15 @@ private final class ChannelStripView: UIView {
         msRow.spacing = 4
         msRow.distribution = .fillEqually
 
+        // Fader + meter side-by-side (meter izquierda, fader derecha).
+        let faderRow = UIStackView(arrangedSubviews: [meterView, fader])
+        faderRow.axis = .horizontal
+        faderRow.spacing = 4
+        faderRow.alignment = .fill
+        meterView.widthAnchor.constraint(equalToConstant: 14).isActive = true
+
         let stack = UIStackView(arrangedSubviews: [
-            titleLabel, eqBox, sendsRow, sendsLabel, fader, panKnob, msRow,
+            titleLabel, eqBox, sendsRow, sendsLabel, faderRow, panKnob, msRow,
         ])
         stack.axis = .vertical
         stack.spacing = 8
@@ -154,7 +196,7 @@ private final class ChannelStripView: UIView {
 
         eqBox.heightAnchor.constraint(equalToConstant: 36).isActive = true
         sendsRow.heightAnchor.constraint(equalToConstant: 18).isActive = true
-        fader.heightAnchor.constraint(equalToConstant: 200).isActive = true
+        faderRow.heightAnchor.constraint(equalToConstant: 200).isActive = true
         panKnob.heightAnchor.constraint(equalToConstant: 60).isActive = true
         msRow.heightAnchor.constraint(equalToConstant: 22).isActive = true
         return stack
@@ -247,5 +289,69 @@ private final class ChannelStripView: UIView {
         guard let controller, let idx = channelIndex, let mixer = controller.mixerRef else { return }
         muteButton.isSelected.toggle()
         controller.setParameter(of: mixer, paramName: "ch\(idx)_mute", value: muteButton.isSelected ? 1 : 0)
+    }
+}
+
+/// Meter stereo. Dos barras verticales L/R con peak indicador.
+/// Mapeo amplitud → altura: lineal por simplicidad (peak alcanza top a 1.0).
+/// Color: cyan en zona segura, amarillo > 0.7, rojo > 0.95.
+private final class StereoMeterView: UIView {
+    private let barL = CALayer()
+    private let barR = CALayer()
+    private let bgL = CALayer()
+    private let bgR = CALayer()
+    private var levelL: Float = 0
+    private var levelR: Float = 0
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        for bg in [bgL, bgR] {
+            bg.backgroundColor = ChipsTheme.buttonGray.withAlphaComponent(0.6).cgColor
+            layer.addSublayer(bg)
+        }
+        for bar in [barL, barR] {
+            bar.backgroundColor = ChipsTheme.accentCyan.cgColor
+            layer.addSublayer(bar)
+        }
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("StereoMeterView no soporta NSCoder")
+    }
+
+    func setLevels(left: Float, right: Float) {
+        levelL = max(0, min(1, left))
+        levelR = max(0, min(1, right))
+        layoutBars()
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        layoutBars()
+    }
+
+    private func layoutBars() {
+        let halfWidth = bounds.width / 2 - 1
+        let height = bounds.height
+        bgL.frame = CGRect(x: 0, y: 0, width: halfWidth, height: height)
+        bgR.frame = CGRect(x: halfWidth + 2, y: 0, width: halfWidth, height: height)
+
+        let hL = CGFloat(levelL) * height
+        let hR = CGFloat(levelR) * height
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        barL.frame = CGRect(x: 0, y: height - hL, width: halfWidth, height: hL)
+        barR.frame = CGRect(x: halfWidth + 2, y: height - hR, width: halfWidth, height: hR)
+        barL.backgroundColor = colorForLevel(levelL).cgColor
+        barR.backgroundColor = colorForLevel(levelR).cgColor
+        CATransaction.commit()
+    }
+
+    private func colorForLevel(_ level: Float) -> UIColor {
+        if level > 0.95 { return ChipsTheme.transportRed }
+        if level > 0.7 { return ChipsTheme.accentYellow }
+        return ChipsTheme.accentCyan
     }
 }

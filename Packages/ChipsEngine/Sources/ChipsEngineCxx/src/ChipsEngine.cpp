@@ -253,4 +253,28 @@ const char* chips_engine_registered_type_at(ChipsEngineHandle* engine, int index
     return engine->registeredTypesCache[static_cast<size_t>(index)].c_str();
 }
 
+float chips_engine_mixer_channel_peak(ChipsEngineHandle* engine, ChipsNodeId node, int channel, bool is_left) {
+    if (engine == nullptr) {
+        return 0.0f;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    auto* mixer = dynamic_cast<chips::MixerModule*>(module);
+    if (mixer == nullptr) {
+        return 0.0f;
+    }
+    return mixer->channelPeak(channel, is_left);
+}
+
+float chips_engine_mixer_master_peak(ChipsEngineHandle* engine, ChipsNodeId node, bool is_left) {
+    if (engine == nullptr) {
+        return 0.0f;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    auto* mixer = dynamic_cast<chips::MixerModule*>(module);
+    if (mixer == nullptr) {
+        return 0.0f;
+    }
+    return mixer->masterPeak(is_left);
+}
+
 }  // extern "C"

@@ -209,6 +209,19 @@ public final class ChipsEngine: @unchecked Sendable {
         chips_engine_send_note_off_at(handle, id, Int32(midi), frameOffset)
     }
 
+    // MARK: Meters del mixer
+
+    /// Peak del canal del mixer (post-gain/pan, pre-mezcla). Devuelve 0 si el
+    /// nodo no es un mixer o el canal está fuera de rango.
+    public func mixerChannelPeak(_ id: ChipsNodeId, channel: Int, isLeft: Bool) -> Float {
+        chips_engine_mixer_channel_peak(handle, id, Int32(channel), isLeft)
+    }
+
+    /// Peak del bus master del mixer (post-suma).
+    public func mixerMasterPeak(_ id: ChipsNodeId, isLeft: Bool) -> Float {
+        chips_engine_mixer_master_peak(handle, id, isLeft)
+    }
+
     // MARK: Introspección
 
     /// Lista de typeIds registrados en el motor en el momento de creación.
