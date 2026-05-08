@@ -5,6 +5,16 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-H — Synth knob units para VoiceOver
+- `SynthesizerSectionViewController`: cada knob recibe un
+  `accessibilityValueFormatter` apropiado:
+  - **VOLUME / SUSTAIN / TUNE (tilt)** → percentFormatter
+    (`"50%"`, `"70%"`).
+  - **ATTACK / DECAY / RELEASE** → timeFormatter (`"10 ms"`,
+    `"150 ms"`, `"1.5 s"` — ms si <1s, s con un decimal si >=1s).
+- Antes los knobs caían al fallback default `"%.2f"` que no es legible
+  cuando el valor real es un tiempo en segundos o un porcentaje.
+
 ### M11-G — Debug HUD overlay (DSP load, sample rate, buffer)
 - `Chips/Shell/DebugHUDView.swift`: vista flotante (DEBUG-only) que
   muestra `"DSP X.X%  48kHz  256"` en la esquina superior derecha del
