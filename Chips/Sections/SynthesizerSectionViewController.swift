@@ -33,8 +33,11 @@ final class SynthesizerSectionViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = ChipsTheme.contentBackground
-        configurePanel()
+        // El keyboard debe quedar añadido a `view` antes que el panel, porque
+        // configurePanel ata `panel.bottomAnchor == keyboard.topAnchor` y la
+        // activación requiere ancestor común.
         configureKeyboard()
+        configurePanel()
         configureKnobBindings()
     }
 
