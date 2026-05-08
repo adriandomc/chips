@@ -25,6 +25,16 @@ final class AppShellViewController: UIViewController {
         fatalError("AppShellViewController no soporta NSCoder")
     }
 
+    private var sidebarWidthConstraint: NSLayoutConstraint?
+    private var topBarHeightConstraint: NSLayoutConstraint?
+
+    /// iPad usa size class regular en horizontal — aumentamos sidebar y topBar.
+    /// iPhone (compact) mantiene los valores originales.
+    private var compactSidebarWidth: CGFloat { 56 }
+    private var regularSidebarWidth: CGFloat { 88 }
+    private var compactTopBarHeight: CGFloat { 44 }
+    private var regularTopBarHeight: CGFloat { 56 }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = ChipsTheme.contentBackground
@@ -38,22 +48,29 @@ final class AppShellViewController: UIViewController {
         view.addSubview(sidebar)
         view.addSubview(contentContainer)
 
+        let sidebarWidth = sidebar.widthAnchor.constraint(equalToConstant: compactSidebarWidth)
+        sidebarWidthConstraint = sidebarWidth
+        let topBarHeight = topBar.heightAnchor.constraint(equalToConstant: compactTopBarHeight)
+        topBarHeightConstraint = topBarHeight
+
         NSLayoutConstraint.activate([
             topBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             topBar.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topBar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topBar.heightAnchor.constraint(equalToConstant: 44),
+            topBarHeight,
 
             sidebar.topAnchor.constraint(equalTo: topBar.bottomAnchor),
             sidebar.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             sidebar.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-            sidebar.widthAnchor.constraint(equalToConstant: 56),
+            sidebarWidth,
 
             contentContainer.topAnchor.constraint(equalTo: topBar.bottomAnchor),
             contentContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             contentContainer.trailingAnchor.constraint(equalTo: sidebar.leadingAnchor),
             contentContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
         ])
+
+        applyTraitBasedLayout()
 
         sidebar.onSelect = { [weak self] section in
             self?.show(section: section)
@@ -121,5 +138,18 @@ final class AppShellViewController: UIViewController {
 
     @objc private func stopTapped() {
         coordinator.stop()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        if previousTraitCollection?.horizontalSizeClass != traitCollection.horizontalSizeClass {
+            applyTraitBasedLayout()
+        }
+    }
+
+    private func applyTraitBasedLayout() {
+        let isRegular = traitCollection.horizontalSizeClass == .regular
+        sidebarWidthConstraint?.constant = isRegular ? regularSidebarWidth : compactSidebarWidth
+        topBarHeightConstraint?.constant = isRegular ? regularTopBarHeight : compactTopBarHeight
     }
 }

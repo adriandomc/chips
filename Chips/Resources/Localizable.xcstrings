@@ -400,6 +400,76 @@
         "es" : { "stringUnit" : { "state" : "translated", "value" : "Stems" } }
       }
     },
+    "synth.knob.attack" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "ATTACK" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "ATAQUE" } }
+      }
+    },
+    "synth.knob.decay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "DECAY" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "CAÍDA" } }
+      }
+    },
+    "synth.knob.sustain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SUSTAIN" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "SOSTÉN" } }
+      }
+    },
+    "synth.knob.release" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "RELEASE" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "LIBERAR" } }
+      }
+    },
+    "synth.knob.finetune" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "FINETUNE" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "AFINADO" } }
+      }
+    },
+    "synth.knob.tune" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "TUNE" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "TONO" } }
+      }
+    },
+    "synth.knob.volume" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "VOLUME" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "VOLUMEN" } }
+      }
+    },
+    "synth.knob.wave" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "WAVE" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "ONDA" } }
+      }
+    },
+    "synth.knob.sub_osc" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SUB OSC" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "SUB OSC" } }
+      }
+    },
+    "synth.knob.glide" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "GLIDE" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "GLISADO" } }
+      }
+    },
     "settings.button.about" : {
       "extractionState" : "manual",
       "localizations" : {
