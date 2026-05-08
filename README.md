@@ -52,6 +52,44 @@ open Chips.xcodeproj
 
 El `.xcodeproj` no se commitea: se regenera desde `project.yml`.
 
+## Probar en dispositivo físico
+
+Recomendado para validar audio real (latencia, glitches, CPU del device).
+
+1. Conecta el iPhone con cable USB.
+2. En Xcode → target **Chips** → tab **Signing & Capabilities**:
+   - Marca *Automatically manage signing*.
+   - **Team**: tu Apple ID (basta el plan gratuito; el build caduca a los 7 días y se renueva al volver a correr).
+3. En la barra superior cambia el destino del simulador a tu iPhone.
+4. ⌘R.
+5. La primera vez el iPhone te pedirá confiar en el certificado en
+   *Ajustes → General → VPN y Gestión de Dispositivos*.
+
+Qué esperar al primer launch:
+- Onboarding de 4 pantallas (Welcome → Sequence → Sound design → Ship it).
+  Pulsa SKIP para ir directo a la app.
+- AppShell con sidebar a la izquierda (Sequencer, Mixer, Synthesizer, Grid,
+  Settings, Help).
+- En **Synthesizer**: toca el piano on-screen y debería sonar el AdditiveSynth
+  (8 voces × 64 partials) con la ADSR y volumen por defecto.
+- En **Mixer**: 8 channel strips con gain/pan/mute.
+- En **Settings → ABOUT**: versión y plataforma de restaurar compras.
+
+Para volver a ver el onboarding tras una prueba: borra y reinstala la app
+(o reset manual del flag `com.adriandomc.chips.onboarding.completedVersion`
+en `UserDefaults`).
+
+### Troubleshooting común
+
+- **No suena nada en device**: revisa volumen físico. El audio session usa
+  `.playback`, que **suena aunque el switch lateral esté en silencio** (es
+  un app de música). Si no oyes nada, prueba a desconectar/reconectar
+  cualquier accesorio Bluetooth y reabre la app.
+- **"Could not launch — provisioning"**: re-elige el Team y clean build folder
+  (⇧⌘K).
+- **Audio cortado al recibir llamada**: comportamiento esperado; el host
+  registra interruption observers y reanuda al colgar.
+
 ## CI
 
 Cada PR ejecuta build, tests, lint y snapshot tests en GitHub Actions (runner macOS).
