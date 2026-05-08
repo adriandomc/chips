@@ -5,6 +5,21 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-E — Device test readiness (AppIcon + run-on-device docs)
+- `Chips/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` (1024×1024):
+  icono geométrico con la identidad del app — 4 tiles de la paleta cálida
+  (pink / mint / cyan / peach) en cuadrícula 2×2, sobre fondo
+  `contentBackground`, con strokes oscuros — espeja el glifo de la página
+  Welcome del onboarding. Generado vía Pillow desde la paleta de
+  `ChipsTheme.trackPalette`.
+- `Contents.json`: declara `AppIcon-1024.png` para el slot universal iOS.
+- `README.md`: nueva sección **"Probar en dispositivo físico"** con
+  pre-reqs, pasos para signing, qué esperar al primer launch y
+  troubleshooting común.
+
+Sin tocar runtime — polish para que la primera experiencia en device
+sea fluida (icon visible en home + guía de qué probar).
+
 ### M8 piloto — SubtractiveSynth (prueba del plug-and-play)
 - `Packages/ChipsEngine/Sources/ChipsEngineCxx/src/SubtractiveSynth.{hpp,cpp}`:
   saw monosynth + biquad LP filter (RBJ cookbook) + ADSR. Implementa
@@ -13,37 +28,23 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
   (Hz, s).
 - Auto-registro vía `ModuleRegistry` con `[[gnu::used]]`. `forceLink()`
   añadido al `touchAllModules()` de `ChipsEngine.cpp`.
-- Tests:
-  - Aparece en `engine.registeredTypes`.
-  - `addNode(typeId: "subtractive_synth")` crea el nodo con 7 specs
-    cuyos nombres son los esperados.
-  - Tras `sendNoteOn(midi: 60)`, el render produce audio con RMS > 0.01.
-- **Sin tocar coordinator, snapshot, UI core ni ProjectController.**
-  La UI sale gratis del `GenericInstrumentPanelViewController` que
-  itera los `ParameterSpec`. Para usarlo desde la app:
-  `controller.addNode(typeId: "subtractive_synth")` — fin.
+- Tests: aparece en `registeredTypes`, `addNode(typeId:)` con 7 specs,
+  tras `sendNoteOn` el render produce audio con RMS > 0.01.
 
-Esta PR es la demostración concreta de la fundación modular cerrada
-en R1–R4. Total: 3 archivos (hpp, cpp, +1 línea en touchAllModules).
+Demostración concreta de la fundación modular cerrada en R1–R4.
 
 ### M11-D — Accesibilidad VoiceOver para componentes UI custom
-- `ChipsKnob`: `isAccessibilityElement = true`, `traits = .adjustable`,
-  `accessibilityLabel` espejea `label`. `accessibilityValue` se formatea
-  via `accessibilityValueFormatter: ((Float) -> String)?` (default
-  "%.2f"). VoiceOver puede ajustar el valor con swipes verticales —
-  `accessibilityIncrement()` y `Decrement()` mueven en pasos de
-  `accessibilityStepFraction` (default 5% del rango) y disparan
-  `.valueChanged` para que el ProjectController escriba el cambio.
-- `ChipsFader`: misma API que `ChipsKnob`.
-- `ChipsButton`: `traits = .button`, `accessibilityLabel` espejea
-  `title`. `ChipsIconButton`: `.button` + `.selected` dinámico.
-  `ChipsTransportButton`: defaults Play/Stop.
-- `SidebarView`: cada `ChipsIconButton` recibe `section.title`.
-- `MixerSectionViewController`: faders/knobs con labels y formatters
-  humanos.
-- `GenericInstrumentPanelViewController`: knobs auto-generados usan
-  `spec.unit` en el formatter.
-- Tests: traits adjustable, label/value, increment/decrement, selected.
+- `ChipsKnob`/`ChipsFader`: `traits = .adjustable`, `accessibilityValue`
+  formateable, increment/decrement con step configurable, dispara
+  `.valueChanged`.
+- `ChipsButton`: `.button`, label espejea title.
+- `ChipsIconButton`: `.button` + `.selected` dinámico.
+- `ChipsTransportButton`: defaults Play/Stop.
+- `SidebarView`: cada icon button recibe `section.title`.
+- `MixerSection`: labels humanos (Track N gain, Center, Mute, Solo).
+- `GenericInstrumentPanelViewController`: knobs usan `spec.unit` en el
+  formatter (`"0.50 Hz"`, `"1.20 dB"`).
+- Tests: traits, label/value, increment/decrement, selected.
 
 ### M11-A — Privacy manifest + StoreKit 2 scaffold + About screen
 - `Chips/PrivacyInfo.xcprivacy`: declara `NSPrivacyAccessedAPICategorySystemBootTime`
