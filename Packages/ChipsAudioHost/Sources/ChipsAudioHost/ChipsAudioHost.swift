@@ -25,6 +25,8 @@ public final class ChipsAudioHost {
 
     private let avEngine = AVAudioEngine()
     private var sourceNode: AVAudioSourceNode?
+    private var renderScratch: UnsafeMutablePointer<Float>?
+    private var renderScratchCapacity: Int = 0
     private var interruptionObserver: (any NSObjectProtocol)?
     private var routeChangeObserver: (any NSObjectProtocol)?
     private var configChangeObserver: (any NSObjectProtocol)?
@@ -49,6 +51,11 @@ public final class ChipsAudioHost {
         if let node = sourceNode {
             avEngine.detach(node)
             sourceNode = nil
+        }
+        if let scratch = renderScratch {
+            scratch.deallocate()
+            renderScratch = nil
+            renderScratchCapacity = 0
         }
         removeObservers()
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
@@ -78,23 +85,57 @@ public final class ChipsAudioHost {
     }
 
     private func installSourceNode() throws {
+        // El graph interno de AVAudioEngine usa float32 non-interleaved (deinterleaved)
+        // como formato canónico. Conectar un sourceNode con interleaved=true al
+        // mainMixerNode falla con kAudioUnitErr_FormatNotSupported (-10868) en iOS.
+        // Adoptamos el sample rate real del mainMixer (fallback al del engine si no
+        // hay aún ruta resuelta) y usamos non-interleaved.
+        let mixerFormat = avEngine.mainMixerNode.outputFormat(forBus: 0)
+        let activeSampleRate = mixerFormat.sampleRate > 0 ? mixerFormat.sampleRate : engine.sampleRate
+
         guard let format = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
-            sampleRate: engine.sampleRate,
+            sampleRate: activeSampleRate,
             channels: 2,
-            interleaved: true
+            interleaved: false
         ) else {
             throw ChipsAudioHostError.formatCreationFailed
         }
 
+        // Scratch buffer para deinterleave: el motor C++ produce LRLR..., el
+        // sourceNode espera buffers planos L y R. Pre-alocado para evitar
+        // allocs en el render block (RT-safe).
+        let scratchCapacity = 8192  // hasta 4096 frames * 2 channels
+        if renderScratch == nil {
+            renderScratch = UnsafeMutablePointer<Float>.allocate(capacity: scratchCapacity)
+            renderScratchCapacity = scratchCapacity
+        }
+        guard let scratch = renderScratch else {
+            throw ChipsAudioHostError.formatCreationFailed
+        }
+        let capacity = renderScratchCapacity
         let engineRef = engine
         let node = AVAudioSourceNode(format: format) { _, _, frameCount, audioBufferList in
-            let bufferList = UnsafeMutableAudioBufferListPointer(audioBufferList)
-            guard let raw = bufferList[0].mData else {
+            let frames = Int(frameCount)
+            guard frames > 0, frames * 2 <= capacity else {
                 return noErr
             }
-            let floats = raw.assumingMemoryBound(to: Float.self)
-            engineRef.render(into: floats, frames: Int(frameCount))
+            engineRef.render(into: scratch, frames: frames)
+            let buffers = UnsafeMutableAudioBufferListPointer(audioBufferList)
+            if buffers.count >= 2,
+               let lPtr = buffers[0].mData?.assumingMemoryBound(to: Float.self),
+               let rPtr = buffers[1].mData?.assumingMemoryBound(to: Float.self) {
+                for i in 0 ..< frames {
+                    lPtr[i] = scratch[i * 2]
+                    rPtr[i] = scratch[i * 2 + 1]
+                }
+            } else if buffers.count == 1,
+                      let mono = buffers[0].mData?.assumingMemoryBound(to: Float.self) {
+                // Output mono: mezcla L+R/2.
+                for i in 0 ..< frames {
+                    mono[i] = (scratch[i * 2] + scratch[i * 2 + 1]) * 0.5
+                }
+            }
             return noErr
         }
         sourceNode = node
