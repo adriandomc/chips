@@ -347,6 +347,45 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertGreaterThan(rms, 0.01)
     }
 
+    func testNewEffectsAutoRegister() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        let types = Set(engine.registeredTypes)
+        XCTAssertTrue(types.contains("compressor"))
+        XCTAssertTrue(types.contains("eq"))
+        XCTAssertTrue(types.contains("chorus"))
+        XCTAssertTrue(types.contains("distortion"))
+        XCTAssertTrue(types.contains("filter"))
+    }
+
+    func testCompressorPassesAudio() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let comp = engine.addNode(typeId: "compressor")
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: comp, port: 0)
+        engine.connect(synth, port: 1, to: comp, port: 1)
+        engine.setOutputNode(comp)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 0.8)
+        engine.setParameter(synth, additive: .attack, value: 0.001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+        _ = engine.sendNoteOn(synth, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        var sumSquares: Double = 0
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+            for i in 0 ..< frames * 2 {
+                sumSquares += Double(buffer[i] * buffer[i])
+            }
+        }
+        XCTAssertGreaterThan((sumSquares / Double(8 * frames * 2)).squareRoot(), 0.005)
+    }
+
     func testSubtractiveSynthAutoRegisters() throws {
         // Plug-and-play: añadir un synth sin tocar coordinator/snapshot/UI core.
         // Aquí solo verificamos que el módulo se auto-registra y expone los

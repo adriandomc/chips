@@ -4,9 +4,14 @@
 
 #include "AdditiveSynth.hpp"
 #include "BeatBox.hpp"
+#include "ChorusModule.hpp"
+#include "CompressorModule.hpp"
 #include "DelayModule.hpp"
+#include "DistortionModule.hpp"
 #include "DspLoadTracker.hpp"
+#include "EQModule.hpp"
 #include "FMSynth.hpp"
+#include "FilterModule.hpp"
 #include "Graph.hpp"
 #include "MixerModule.hpp"
 #include "ModuleRegistry.hpp"
@@ -39,6 +44,11 @@ void touchAllModules() {
     chips::FMSynth::forceLink();
     chips::WavetableSynth::forceLink();
     chips::BeatBox::forceLink();
+    chips::CompressorModule::forceLink();
+    chips::EQModule::forceLink();
+    chips::ChorusModule::forceLink();
+    chips::DistortionModule::forceLink();
+    chips::FilterModule::forceLink();
     chips::MixerModule::forceLink();
     chips::DelayModule::forceLink();
     chips::ReverbModule::forceLink();
