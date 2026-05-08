@@ -40,9 +40,35 @@ final class ProjectController: SequencerEngineDelegate {
     }
 
     /// Default graph: la cadena heredada synth → mixer → delay → reverb. Útil
-    /// para arrancar fresco desde la UI.
+    /// para arrancar fresco desde la UI. Incluye un track con un pattern
+    /// seed (una escala de C mayor en 8 notas) ruteado al synth — así, al
+    /// pulsar Play en el primer launch, el usuario oye algo de inmediato.
     static func defaultGraph() -> ProjectGraph {
-        ProjectMigrator.migrateV1ToV2(ProjectSnapshot())
+        var graph = ProjectMigrator.migrateV1ToV2(ProjectSnapshot())
+        if graph.tracks.isEmpty, let synthRef = graph.nodes.first(where: { $0.typeId == "additive_synth" })?.id {
+            graph.tracks = [Self.makeSeedTrack(instrumentRef: synthRef)]
+        }
+        return graph
+    }
+
+    /// Track de demostración: 1 bar (1920 ticks @ PPQ=480) con C mayor
+    /// ascendente en 8 corcheas. Velocity 1.0. La idea: dar al usuario algo
+    /// audible al pulsar Play sin obligarle a dibujar notas primero.
+    private static func makeSeedTrack(instrumentRef: NodeRef) -> Track {
+        let ppq = Int64(ChipsCore.ppq)
+        let stepTicks = ppq / 2 // corchea
+        let lengthTicks = stepTicks - (stepTicks / 12) // pequeño gap rítmico
+        let scale: [UInt8] = [60, 62, 64, 65, 67, 69, 71, 72]
+        let notes: [PatternNote] = scale.enumerated().map { index, midi in
+            PatternNote(
+                startTick: Int64(index) * stepTicks,
+                lengthTicks: lengthTicks,
+                midi: midi,
+                velocity: 0.85
+            )
+        }
+        let pattern = Pattern(name: "Demo", lengthTicks: ppq * 4, notes: notes)
+        return Track(name: "Lead", colorIndex: 0, patterns: [pattern], instrumentRef: instrumentRef)
     }
 
     // MARK: Reconstrucción del motor

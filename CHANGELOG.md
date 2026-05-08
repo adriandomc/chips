@@ -5,6 +5,21 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-F — Default seed pattern (audible al primer Play)
+- `ProjectController.defaultGraph()`: tras migrar v1 → v2, si los tracks
+  vienen vacíos (caso del primer launch fresh), inyecta un track demo
+  llamado "Lead" ruteado al additive synth con un pattern de 8 notas —
+  escala de C mayor ascendente en corcheas (`60, 62, 64, 65, 67, 69, 71,
+  72` ≈ C4 hasta C5), velocity 0.85, lengthTicks = corchea (con un
+  pequeño gap rítmico). Pattern length = 1 compás @ 4/4 (1920 ticks).
+- El usuario que abre la app por primera vez puede ir a Sequencer →
+  pulsar Play y oír la escala sin haber dibujado notas. Útil para
+  validar audio en el primer test de device.
+- Si el grafo cargado de disco ya trae tracks (caso de proyectos
+  guardados), el seed no se aplica.
+- Test: `testDefaultGraphSeedsAudibleTrack` verifica 1 track con 8
+  notas C-major ruteado al synthRef.
+
 ### M11-D — Accesibilidad VoiceOver para componentes UI custom
 - `ChipsKnob`: `isAccessibilityElement = true`, `traits = .adjustable`,
   `accessibilityLabel` espejea `label`. `accessibilityValue` se formatea

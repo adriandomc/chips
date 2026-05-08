@@ -13,6 +13,23 @@ final class ChipsAppTests: XCTestCase {
     }
 
     @MainActor
+    func testDefaultGraphSeedsAudibleTrack() throws {
+        // El default graph trae un track demo con 8 notas (escala C mayor)
+        // ruteado al synth. Así al primer launch el usuario puede pulsar Play
+        // y oír algo sin tener que dibujar notas.
+        let graph = ProjectController.defaultGraph()
+        XCTAssertEqual(graph.tracks.count, 1)
+        guard let track = graph.tracks.first, let pattern = track.patterns.first else {
+            XCTFail("track/pattern")
+            return
+        }
+        XCTAssertEqual(pattern.notes.count, 8)
+        let synthRef = graph.nodes.first { $0.typeId == "additive_synth" }?.id
+        XCTAssertEqual(track.instrumentRef, synthRef)
+        XCTAssertEqual(pattern.notes.map(\.midi), [60, 62, 64, 65, 67, 69, 71, 72])
+    }
+
+    @MainActor
     func testAppShellLoads() throws {
         let controller = try ProjectController(graph: ProjectController.defaultGraph())
         let shell = AppShellViewController(controller: controller)
