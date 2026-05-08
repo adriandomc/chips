@@ -44,18 +44,18 @@ final class SynthesizerSectionViewController: UIViewController {
         view.addSubview(panel)
 
         let envelope = makeKnobsRow([
-            ("ATTACK", attackKnob),
-            ("DECAY", decayKnob),
-            ("SUSTAIN", sustainKnob),
-            ("RELEASE", releaseKnob),
+            (String(localized: "synth.knob.attack"), attackKnob),
+            (String(localized: "synth.knob.decay"), decayKnob),
+            (String(localized: "synth.knob.sustain"), sustainKnob),
+            (String(localized: "synth.knob.release"), releaseKnob),
         ])
         let oscillator = makeKnobsRow([
-            ("FINETUNE", fineTuneKnob),
-            ("TUNE", tiltKnob),
-            ("VOLUME", volumeKnob),
-            ("WAVE", waveKnob),
-            ("SUB OSC", subOscKnob),
-            ("GLIDE", glideKnob),
+            (String(localized: "synth.knob.finetune"), fineTuneKnob),
+            (String(localized: "synth.knob.tune"), tiltKnob),
+            (String(localized: "synth.knob.volume"), volumeKnob),
+            (String(localized: "synth.knob.wave"), waveKnob),
+            (String(localized: "synth.knob.sub_osc"), subOscKnob),
+            (String(localized: "synth.knob.glide"), glideKnob),
         ])
 
         let panelStack = UIStackView(arrangedSubviews: [envelope, oscillator])

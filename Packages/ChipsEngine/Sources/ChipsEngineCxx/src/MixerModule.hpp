@@ -6,6 +6,7 @@
 
 #include "IModule.hpp"
 
+#include <atomic>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -50,6 +51,14 @@ public:
 
     int numChannels() const { return numChannels_; }
 
+    /// Lectura no-bloqueante del peak del canal. `isLeft = true` → L, false → R.
+    /// `0` si el canal está fuera de rango. Lecturas desde el control thread
+    /// mientras el audio thread escribe son seguras (atomic relaxed).
+    float channelPeak(int channel, bool isLeft) const;
+
+    /// Peak del bus master (post-suma).
+    float masterPeak(bool isLeft) const;
+
 private:
     struct Channel {
         float gain = 1.0f;
@@ -57,8 +66,15 @@ private:
         bool muted = false;
     };
 
+    static constexpr float kPeakDecayPerBlock = 0.85f;
+
     int numChannels_;
     std::vector<Channel> channels_;
+    /// Peak por canal (post-gain/pan, antes de mezcla). Index = ch*2 + (L?0:1).
+    /// std::atomic<float> con relaxed para no penalizar el render.
+    std::vector<std::atomic<float>> channelPeak_;
+    std::atomic<float> masterPeakL_{0.0f};
+    std::atomic<float> masterPeakR_{0.0f};
     /// Storage estable de los names de los specs ("ch0_gain", etc.). Reservado
     /// con la capacidad final en el constructor para que `c_str()` no se invalide.
     std::vector<std::string> paramNameStorage_;

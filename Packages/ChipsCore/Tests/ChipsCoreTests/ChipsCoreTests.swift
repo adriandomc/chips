@@ -227,4 +227,57 @@ final class ChipsCoreTests: XCTestCase {
         XCTAssertNotNil(engine.delegate)
         _ = spy
     }
+
+    @MainActor
+    func testCommandBusUndoRedoCycles() {
+        var counter = 0
+        let bus = CommandBus()
+        let inc = BlockCommand(label: "+1", perform: { counter += 1 }, undo: { counter -= 1 })
+        bus.execute(inc)
+        XCTAssertEqual(counter, 1)
+        XCTAssertTrue(bus.canUndo)
+        XCTAssertFalse(bus.canRedo)
+        XCTAssertEqual(bus.undoLabel, "+1")
+
+        bus.undo()
+        XCTAssertEqual(counter, 0)
+        XCTAssertFalse(bus.canUndo)
+        XCTAssertTrue(bus.canRedo)
+
+        bus.redo()
+        XCTAssertEqual(counter, 1)
+    }
+
+    @MainActor
+    func testCommandBusExecuteClearsRedo() {
+        var counter = 0
+        let bus = CommandBus()
+        let a = BlockCommand(label: "a", perform: { counter += 1 }, undo: { counter -= 1 })
+        let b = BlockCommand(label: "b", perform: { counter += 10 }, undo: { counter -= 10 })
+        bus.execute(a)
+        bus.undo()
+        XCTAssertTrue(bus.canRedo)
+        bus.execute(b)
+        XCTAssertFalse(bus.canRedo)
+    }
+
+    @MainActor
+    func testCommandBusMaxDepthDropsOldest() {
+        var trace: [Int] = []
+        let bus = CommandBus(maxDepth: 2)
+        for i in 0 ..< 4 {
+            let captured = i
+            let cmd = BlockCommand(
+                label: "\(i)",
+                perform: { trace.append(captured) },
+                undo: { _ = trace.popLast() }
+            )
+            bus.execute(cmd)
+        }
+        XCTAssertTrue(bus.canUndo)
+        bus.undo()
+        bus.undo()
+        XCTAssertFalse(bus.canUndo)
+        XCTAssertEqual(trace, [0, 1])
+    }
 }

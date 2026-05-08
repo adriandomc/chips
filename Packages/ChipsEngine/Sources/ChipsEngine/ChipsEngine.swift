@@ -191,6 +191,37 @@ public final class ChipsEngine: @unchecked Sendable {
         chips_engine_send_note_off(handle, id, Int32(midi))
     }
 
+    /// Variantes con `frameOffset` para scheduling sample-accurate.
+    /// `frameOffset` se interpreta en samples desde el inicio del próximo render().
+    /// Pasa 0 para semántica idéntica a las versiones sin offset.
+    @discardableResult
+    public func setParameter(_ id: ChipsNodeId, paramId: UInt32, value: Float, frameOffset: UInt32) -> Bool {
+        chips_engine_set_parameter_at(handle, id, paramId, value, frameOffset)
+    }
+
+    @discardableResult
+    public func sendNoteOn(_ id: ChipsNodeId, midi: Int, velocity: Float, frameOffset: UInt32) -> Bool {
+        chips_engine_send_note_on_at(handle, id, Int32(midi), velocity, frameOffset)
+    }
+
+    @discardableResult
+    public func sendNoteOff(_ id: ChipsNodeId, midi: Int, frameOffset: UInt32) -> Bool {
+        chips_engine_send_note_off_at(handle, id, Int32(midi), frameOffset)
+    }
+
+    // MARK: Meters del mixer
+
+    /// Peak del canal del mixer (post-gain/pan, pre-mezcla). Devuelve 0 si el
+    /// nodo no es un mixer o el canal está fuera de rango.
+    public func mixerChannelPeak(_ id: ChipsNodeId, channel: Int, isLeft: Bool) -> Float {
+        chips_engine_mixer_channel_peak(handle, id, Int32(channel), isLeft)
+    }
+
+    /// Peak del bus master del mixer (post-suma).
+    public func mixerMasterPeak(_ id: ChipsNodeId, isLeft: Bool) -> Float {
+        chips_engine_mixer_master_peak(handle, id, isLeft)
+    }
+
     // MARK: Introspección
 
     /// Lista de typeIds registrados en el motor en el momento de creación.

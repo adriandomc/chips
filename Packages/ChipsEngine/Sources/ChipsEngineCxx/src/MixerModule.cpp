@@ -31,8 +31,13 @@ void appendChannelSpec(std::vector<std::string>& names, std::vector<ParamSpec>& 
 
 void MixerModule::forceLink() {}
 
-MixerModule::MixerModule(int numChannels) : numChannels_(std::max(1, std::min(kMaxChannels, numChannels))) {
+MixerModule::MixerModule(int numChannels)
+    : numChannels_(std::max(1, std::min(kMaxChannels, numChannels))),
+      channelPeak_(static_cast<size_t>(numChannels_) * 2) {
     channels_.assign(static_cast<size_t>(numChannels_), Channel{});
+    for (auto& peak : channelPeak_) {
+        peak.store(0.0f, std::memory_order_relaxed);
+    }
 
     const size_t totalSpecs = static_cast<size_t>(numChannels_) * 3;
     paramNameStorage_.reserve(totalSpecs);
@@ -43,6 +48,18 @@ MixerModule::MixerModule(int numChannels) : numChannels_(std::max(1, std::min(kM
         appendChannelSpec(paramNameStorage_, paramSpecs_, channel, Pan, "pan", "", -1.0f, 1.0f, 0.0f);
         appendChannelSpec(paramNameStorage_, paramSpecs_, channel, Mute, "mute", "", 0.0f, 1.0f, 0.0f);
     }
+}
+
+float MixerModule::channelPeak(int channel, bool isLeft) const {
+    if (channel < 0 || channel >= numChannels_) {
+        return 0.0f;
+    }
+    const size_t idx = static_cast<size_t>(channel) * 2 + (isLeft ? 0 : 1);
+    return channelPeak_[idx].load(std::memory_order_relaxed);
+}
+
+float MixerModule::masterPeak(bool isLeft) const {
+    return (isLeft ? masterPeakL_ : masterPeakR_).load(std::memory_order_relaxed);
 }
 
 ParamSpec MixerModule::parameterAt(int index) const {
@@ -99,22 +116,54 @@ void MixerModule::process(const ProcessContext& ctx) {
     const int totalChannels = std::min(numChannels_, ctx.numAudioIn / 2);
     for (int channelIdx = 0; channelIdx < totalChannels; ++channelIdx) {
         const Channel& ch = channels_[static_cast<size_t>(channelIdx)];
+        const size_t peakIdx = static_cast<size_t>(channelIdx) * 2;
+        // Decay del peak retenido (incluso si el canal está muted).
+        const float decayedL = channelPeak_[peakIdx].load(std::memory_order_relaxed) * kPeakDecayPerBlock;
+        const float decayedR = channelPeak_[peakIdx + 1].load(std::memory_order_relaxed) * kPeakDecayPerBlock;
         if (ch.muted) {
+            channelPeak_[peakIdx].store(decayedL, std::memory_order_relaxed);
+            channelPeak_[peakIdx + 1].store(decayedR, std::memory_order_relaxed);
             continue;
         }
         const float* inL = ctx.audioIn != nullptr ? ctx.audioIn[channelIdx * 2] : nullptr;
         const float* inR = ctx.audioIn != nullptr ? ctx.audioIn[channelIdx * 2 + 1] : nullptr;
         if (inL == nullptr || inR == nullptr) {
+            channelPeak_[peakIdx].store(decayedL, std::memory_order_relaxed);
+            channelPeak_[peakIdx + 1].store(decayedR, std::memory_order_relaxed);
             continue;
         }
         const float panNorm = (ch.pan + 1.0f) * 0.5f;
         const float gainL = ch.gain * std::cos(panNorm * static_cast<float>(M_PI_2));
         const float gainR = ch.gain * std::sin(panNorm * static_cast<float>(M_PI_2));
+        float blockPeakL = 0.0f;
+        float blockPeakR = 0.0f;
         for (int i = 0; i < ctx.frames; ++i) {
-            outL[i] += inL[i] * gainL;
-            outR[i] += inR[i] * gainR;
+            const float wetL = inL[i] * gainL;
+            const float wetR = inR[i] * gainR;
+            outL[i] += wetL;
+            outR[i] += wetR;
+            const float absL = std::fabs(wetL);
+            const float absR = std::fabs(wetR);
+            if (absL > blockPeakL) blockPeakL = absL;
+            if (absR > blockPeakR) blockPeakR = absR;
         }
+        channelPeak_[peakIdx].store(std::max(decayedL, blockPeakL), std::memory_order_relaxed);
+        channelPeak_[peakIdx + 1].store(std::max(decayedR, blockPeakR), std::memory_order_relaxed);
     }
+
+    // Master peak (post-suma).
+    float masterDecayedL = masterPeakL_.load(std::memory_order_relaxed) * kPeakDecayPerBlock;
+    float masterDecayedR = masterPeakR_.load(std::memory_order_relaxed) * kPeakDecayPerBlock;
+    float masterBlockL = 0.0f;
+    float masterBlockR = 0.0f;
+    for (int i = 0; i < ctx.frames; ++i) {
+        const float aL = std::fabs(outL[i]);
+        const float aR = std::fabs(outR[i]);
+        if (aL > masterBlockL) masterBlockL = aL;
+        if (aR > masterBlockR) masterBlockR = aR;
+    }
+    masterPeakL_.store(std::max(masterDecayedL, masterBlockL), std::memory_order_relaxed);
+    masterPeakR_.store(std::max(masterDecayedR, masterBlockR), std::memory_order_relaxed);
 }
 
 }  // namespace chips

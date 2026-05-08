@@ -70,6 +70,15 @@ bool chips_engine_set_parameter(ChipsEngineHandle* engine, ChipsNodeId node, uin
 bool chips_engine_send_note_on(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity);
 bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int midi);
 
+/// Versiones con `frame_offset` (samples desde el inicio del próximo render)
+/// para scheduling sample-accurate. Pase 0 para semántica idéntica a las
+/// versiones sin offset.
+bool chips_engine_set_parameter_at(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value,
+                                   uint32_t frame_offset);
+bool chips_engine_send_note_on_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity,
+                                  uint32_t frame_offset);
+bool chips_engine_send_note_off_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, uint32_t frame_offset);
+
 // ---- Introspección de módulos ----
 
 /// Devuelve el typeId del nodo (string estable). NULL si el nodo no existe.
@@ -89,6 +98,16 @@ int chips_engine_registered_type_count(ChipsEngineHandle* engine);
 
 /// typeId registrado en el índice dado (0..count-1). NULL si fuera de rango.
 const char* chips_engine_registered_type_at(ChipsEngineHandle* engine, int index);
+
+// ---- Meters del mixer ----
+
+/// Peak del canal (post-gain/pan, pre-mezcla). Devuelve 0 si `node` no es un
+/// MixerModule, el canal está fuera de rango, o el engine es NULL.
+/// `is_left` selecciona L (true) o R (false). Lectura no-bloqueante.
+float chips_engine_mixer_channel_peak(ChipsEngineHandle* engine, ChipsNodeId node, int channel, bool is_left);
+
+/// Peak del bus master del mixer (post-suma).
+float chips_engine_mixer_master_peak(ChipsEngineHandle* engine, ChipsNodeId node, bool is_left);
 
 #ifdef __cplusplus
 }

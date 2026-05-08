@@ -251,10 +251,25 @@ final class SettingsSectionViewController: UIViewController {
     }
 
     @objc private func stemsTapped() {
-        showAlert(
-            title: String(localized: "settings.alert.stems_title"),
-            message: String(localized: "settings.alert.stems_message")
-        )
+        let typed = projectName.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let baseName = typed.isEmpty ? "Untitled" : typed
+        do {
+            let urls = try controller.exportStems(directoryURL: documentsDirectory(), baseName: baseName, seconds: 8)
+            if urls.isEmpty {
+                showAlert(
+                    title: String(localized: "settings.alert.stems_title"),
+                    message: String(localized: "settings.alert.stems_empty_message")
+                )
+                return
+            }
+            let format = String(localized: "settings.alert.stems_done_message_format")
+            showAlert(
+                title: String(localized: "settings.alert.stems_title"),
+                message: String(format: format, urls.count)
+            )
+        } catch {
+            showAlert(title: String(localized: "settings.alert.export_error"), message: "\(error)")
+        }
     }
 
     @objc private func aboutTapped() {

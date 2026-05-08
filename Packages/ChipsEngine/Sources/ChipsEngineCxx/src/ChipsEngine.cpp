@@ -3,8 +3,15 @@
 #include "ChipsEngine/ChipsEngine.h"
 
 #include "AdditiveSynth.hpp"
+#include "BeatBox.hpp"
+#include "ChorusModule.hpp"
+#include "CompressorModule.hpp"
 #include "DelayModule.hpp"
+#include "DistortionModule.hpp"
 #include "DspLoadTracker.hpp"
+#include "EQModule.hpp"
+#include "FMSynth.hpp"
+#include "FilterModule.hpp"
 #include "Graph.hpp"
 #include "MixerModule.hpp"
 #include "ModuleRegistry.hpp"
@@ -13,6 +20,7 @@
 #include "SineGenerator.hpp"
 #include "SubtractiveSynth.hpp"
 #include "TestSourceModule.hpp"
+#include "WavetableSynth.hpp"
 
 #include <cstring>
 #include <memory>
@@ -33,6 +41,14 @@ void touchAllModules() {
     chips::TestSourceModule::forceLink();
     chips::AdditiveSynth::forceLink();
     chips::SubtractiveSynth::forceLink();
+    chips::FMSynth::forceLink();
+    chips::WavetableSynth::forceLink();
+    chips::BeatBox::forceLink();
+    chips::CompressorModule::forceLink();
+    chips::EQModule::forceLink();
+    chips::ChorusModule::forceLink();
+    chips::DistortionModule::forceLink();
+    chips::FilterModule::forceLink();
     chips::MixerModule::forceLink();
     chips::DelayModule::forceLink();
     chips::ReverbModule::forceLink();
@@ -177,6 +193,29 @@ bool chips_engine_send_note_off(ChipsEngineHandle* engine, ChipsNodeId node, int
     return engine->graph.postNoteOff(node, midi);
 }
 
+bool chips_engine_set_parameter_at(ChipsEngineHandle* engine, ChipsNodeId node, uint32_t param_id, float value,
+                                   uint32_t frame_offset) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postParameter(node, param_id, value, frame_offset);
+}
+
+bool chips_engine_send_note_on_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, float velocity,
+                                  uint32_t frame_offset) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postNoteOn(node, midi, velocity, frame_offset);
+}
+
+bool chips_engine_send_note_off_at(ChipsEngineHandle* engine, ChipsNodeId node, int midi, uint32_t frame_offset) {
+    if (engine == nullptr) {
+        return false;
+    }
+    return engine->graph.postNoteOff(node, midi, frame_offset);
+}
+
 // ---- Introspección (R1) ----
 
 const char* chips_engine_node_type_id(ChipsEngineHandle* engine, ChipsNodeId node) {
@@ -228,6 +267,30 @@ const char* chips_engine_registered_type_at(ChipsEngineHandle* engine, int index
         return nullptr;
     }
     return engine->registeredTypesCache[static_cast<size_t>(index)].c_str();
+}
+
+float chips_engine_mixer_channel_peak(ChipsEngineHandle* engine, ChipsNodeId node, int channel, bool is_left) {
+    if (engine == nullptr) {
+        return 0.0f;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    auto* mixer = dynamic_cast<chips::MixerModule*>(module);
+    if (mixer == nullptr) {
+        return 0.0f;
+    }
+    return mixer->channelPeak(channel, is_left);
+}
+
+float chips_engine_mixer_master_peak(ChipsEngineHandle* engine, ChipsNodeId node, bool is_left) {
+    if (engine == nullptr) {
+        return 0.0f;
+    }
+    chips::IModule* module = engine->graph.node(node);
+    auto* mixer = dynamic_cast<chips::MixerModule*>(module);
+    if (mixer == nullptr) {
+        return 0.0f;
+    }
+    return mixer->masterPeak(is_left);
 }
 
 }  // extern "C"

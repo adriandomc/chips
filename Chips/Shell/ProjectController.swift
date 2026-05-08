@@ -1,6 +1,7 @@
 import ChipsAudioHost
 import ChipsCore
 import ChipsEngine
+import ChipsMIDI
 import Foundation
 
 enum ProjectControllerError: Error {
@@ -26,6 +27,7 @@ final class ProjectController: SequencerEngineDelegate {
     let sequencer = SequencerEngine()
     private(set) var graph: ProjectGraph
     private var nodeIds: [NodeRef: ChipsNodeId] = [:]
+    private var midiInput: ChipsMIDIInput?
 
     var onTimecodeChange: ((String) -> Void)?
     var onTickChange: ((Int64) -> Void)?
@@ -37,6 +39,48 @@ final class ProjectController: SequencerEngineDelegate {
         sequencer.delegate = self
         sequencer.setTracks(graph.tracks)
         sequencer.setTempo(graph.tempoBpm)
+        startMIDIInput()
+    }
+
+    /// Crea una virtual MIDI destination "Chips" y rutea note on/off al
+    /// instrumento principal del proyecto (synthRef si existe; si no, al
+    /// primer nodo con `numAudioInputs == 0` que admita notas). CC se
+    /// reserva para futuras asignaciones; por ahora se ignora.
+    private func startMIDIInput() {
+        do {
+            let input = try ChipsMIDIInput(name: "Chips")
+            input.onNoteOn = { [weak self] _, midi, velocity in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.routeMidiNoteOn(midi: midi, velocity: velocity)
+                }
+            }
+            input.onNoteOff = { [weak self] _, midi in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.routeMidiNoteOff(midi: midi)
+                }
+            }
+            midiInput = input
+        } catch {
+            // CoreMIDI puede fallar en simulator viejo; no es crítico.
+            midiInput = nil
+        }
+    }
+
+    private func routeMidiNoteOn(midi: Int, velocity: Float) {
+        guard let ref = synthRef ?? firstInstrumentRef(), let chipsId = nodeIds[ref] else { return }
+        host.engine.sendNoteOn(chipsId, midi: midi, velocity: velocity)
+    }
+
+    private func routeMidiNoteOff(midi: Int) {
+        guard let ref = synthRef ?? firstInstrumentRef(), let chipsId = nodeIds[ref] else { return }
+        host.engine.sendNoteOff(chipsId, midi: midi)
+    }
+
+    private func firstInstrumentRef() -> NodeRef? {
+        // Heurística: el primer nodo cuyo typeId termina en _synth (synth puro).
+        graph.nodes.first { $0.typeId.contains("synth") }?.id
     }
 
     /// Default graph: la cadena heredada synth → mixer → delay → reverb. Útil
@@ -248,31 +292,140 @@ final class ProjectController: SequencerEngineDelegate {
 
     // MARK: Export WAV
 
+    /// Render offline (faster-than-realtime). Construye un `ChipsEngine` propio
+    /// que replica `graph`, pre-genera todos los eventos del sequencer en el
+    /// rango y los despacha con `frameOffset` sample-accurate. No toca el host
+    /// live — el usuario puede seguir reproduciendo en paralelo si quisiera.
     func exportWav(to url: URL, seconds: Float) throws {
-        sequencer.stop()
-        host.stop()
+        let samples = renderOffline(seconds: seconds, includeTrackId: nil)
+        try WavWriter.writeStereoPCM16(samples: samples, sampleRate: 48000, to: url)
+    }
 
+    /// M7.5: stems. Renderiza una WAV por track (cada una con todos los efectos
+    /// del proyecto aplicados). Devuelve la lista de URLs creadas.
+    @discardableResult
+    func exportStems(directoryURL: URL, baseName: String, seconds: Float) throws -> [URL] {
+        var urls: [URL] = []
+        for (index, track) in sequencer.tracks.enumerated() {
+            let safeTrackName = track.name.replacingOccurrences(of: "/", with: "_")
+            let fileName = "\(baseName) - \(index + 1) \(safeTrackName).wav"
+            let stemURL = directoryURL.appendingPathComponent(fileName)
+            let samples = renderOffline(seconds: seconds, includeTrackId: track.id)
+            try WavWriter.writeStereoPCM16(samples: samples, sampleRate: 48000, to: stemURL)
+            urls.append(stemURL)
+        }
+        return urls
+    }
+
+    private func renderOffline(seconds: Float, includeTrackId: UUID?) -> [Float] {
         let sampleRate = 48000
         let totalFrames = Int(Float(sampleRate) * seconds)
-        var samples = [Float](repeating: 0, count: totalFrames * 2)
+        let blockSize = 1024
+        let ppq = ChipsCore.ppq
+        let tempoBpm = max(20, sequencer.transport.tempoBpm)
+        let secondsPerTick = 60.0 / Double(tempoBpm) / Double(ppq)
+        let samplesPerTick = Double(sampleRate) * secondsPerTick
 
-        sequencer.play()
-        try? host.start()
-
-        samples.withUnsafeMutableBufferPointer { buffer in
-            guard let base = buffer.baseAddress else { return }
-            var offset = 0
-            let blockSize = 1024
-            while offset < totalFrames {
-                let block = min(blockSize, totalFrames - offset)
-                host.engine.render(into: base.advanced(by: offset * 2), frames: block)
-                offset += block
+        guard let offlineEngine = try? ChipsEngine(sampleRate: Double(sampleRate), maxFrames: blockSize) else {
+            return [Float](repeating: 0, count: totalFrames * 2)
+        }
+        var localIds: [NodeRef: ChipsNodeId] = [:]
+        for node in graph.nodes {
+            if let id = offlineEngine.addNode(typeId: node.typeId) {
+                localIds[node.id] = id
+            }
+        }
+        for connection in graph.connections {
+            guard let src = localIds[connection.src], let dst = localIds[connection.dst] else { continue }
+            offlineEngine.connect(src, port: connection.srcPort, to: dst, port: connection.dstPort)
+        }
+        if let outRef = graph.outputNodeRef, let outId = localIds[outRef] {
+            offlineEngine.setOutputNode(outId)
+        }
+        guard offlineEngine.compile() else {
+            return [Float](repeating: 0, count: totalFrames * 2)
+        }
+        for node in graph.nodes {
+            guard let chipsId = localIds[node.id] else { continue }
+            let specs = offlineEngine.parameterSpecs(of: chipsId)
+            let byName = Dictionary(uniqueKeysWithValues: specs.map { ($0.name, $0) })
+            for (paramName, value) in node.parameters {
+                if let spec = byName[paramName] {
+                    offlineEngine.setParameter(chipsId, paramId: spec.paramId, value: value)
+                }
             }
         }
 
-        sequencer.stop()
-        host.stop()
-        try WavWriter.writeStereoPCM16(samples: samples, sampleRate: sampleRate, to: url)
+        let activeTracks: [Track] = {
+            if let id = includeTrackId {
+                return sequencer.tracks.filter { $0.id == id }
+            } else {
+                return sequencer.tracks
+            }
+        }()
+
+        struct OfflineEvent {
+            let absTick: Int64
+            let isOn: Bool
+            let chipsId: ChipsNodeId
+            let midi: Int
+            let velocity: Float
+        }
+        let maxTicks = Int64(ceil(Double(totalFrames) / samplesPerTick)) + 1
+        var events: [OfflineEvent] = []
+        for track in activeTracks {
+            guard let ref = track.instrumentRef, let chipsId = localIds[ref] else { continue }
+            for pattern in track.patterns where pattern.lengthTicks > 0 {
+                var loopBase: Int64 = 0
+                while loopBase < maxTicks {
+                    for note in pattern.notes {
+                        let absStart = loopBase + note.startTick
+                        if absStart < maxTicks {
+                            events.append(OfflineEvent(absTick: absStart, isOn: true,
+                                                       chipsId: chipsId, midi: Int(note.midi), velocity: note.velocity))
+                        }
+                        let absEnd = absStart + note.lengthTicks
+                        if absEnd < maxTicks {
+                            events.append(OfflineEvent(absTick: absEnd, isOn: false,
+                                                       chipsId: chipsId, midi: Int(note.midi), velocity: 0))
+                        }
+                    }
+                    loopBase += pattern.lengthTicks
+                }
+            }
+        }
+        // Note-off antes de note-on en el mismo tick para clean voice stealing.
+        events.sort { lhs, rhs in
+            if lhs.absTick != rhs.absTick { return lhs.absTick < rhs.absTick }
+            return (lhs.isOn ? 1 : 0) < (rhs.isOn ? 1 : 0)
+        }
+
+        var samples = [Float](repeating: 0, count: totalFrames * 2)
+        samples.withUnsafeMutableBufferPointer { buf in
+            guard let base = buf.baseAddress else { return }
+            var sampleCursor = 0
+            var eventIdx = 0
+            while sampleCursor < totalFrames {
+                let block = min(blockSize, totalFrames - sampleCursor)
+                let blockEnd = sampleCursor + block
+                while eventIdx < events.count {
+                    let event = events[eventIdx]
+                    let eventSample = Int(Double(event.absTick) * samplesPerTick)
+                    if eventSample >= blockEnd { break }
+                    let frameOffset = UInt32(max(0, eventSample - sampleCursor))
+                    if event.isOn {
+                        offlineEngine.sendNoteOn(event.chipsId, midi: event.midi, velocity: event.velocity,
+                                                 frameOffset: frameOffset)
+                    } else {
+                        offlineEngine.sendNoteOff(event.chipsId, midi: event.midi, frameOffset: frameOffset)
+                    }
+                    eventIdx += 1
+                }
+                offlineEngine.render(into: base.advanced(by: sampleCursor * 2), frames: block)
+                sampleCursor = blockEnd
+            }
+        }
+        return samples
     }
 
     // MARK: SequencerEngineDelegate

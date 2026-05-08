@@ -305,9 +305,85 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertTrue(types.contains("test_source"))
         XCTAssertTrue(types.contains("additive_synth"))
         XCTAssertTrue(types.contains("subtractive_synth"))
+        XCTAssertTrue(types.contains("fm_synth"))
+        XCTAssertTrue(types.contains("wavetable_synth"))
+        XCTAssertTrue(types.contains("beatbox"))
         XCTAssertTrue(types.contains("mixer"))
         XCTAssertTrue(types.contains("delay"))
         XCTAssertTrue(types.contains("reverb"))
+    }
+
+    private func renderRMS(typeId: String, midi: Int, blocks: Int = 8) throws -> Double {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let node = engine.addNode(typeId: typeId) else { return 0 }
+        engine.setOutputNode(node)
+        XCTAssertTrue(engine.compile())
+        _ = engine.sendNoteOn(node, midi: midi, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        var sumSquares: Double = 0
+        for _ in 0 ..< blocks {
+            engine.render(into: buffer, frames: frames)
+            for i in 0 ..< frames * 2 {
+                sumSquares += Double(buffer[i] * buffer[i])
+            }
+        }
+        return (sumSquares / Double(blocks * frames * 2)).squareRoot()
+    }
+
+    func testFMSynthRendersAfterNoteOn() throws {
+        let rms = try renderRMS(typeId: "fm_synth", midi: 60)
+        XCTAssertGreaterThan(rms, 0.01)
+    }
+
+    func testWavetableSynthRendersAfterNoteOn() throws {
+        let rms = try renderRMS(typeId: "wavetable_synth", midi: 60)
+        XCTAssertGreaterThan(rms, 0.01)
+    }
+
+    func testBeatBoxRendersAfterKickTrigger() throws {
+        let rms = try renderRMS(typeId: "beatbox", midi: 36, blocks: 4)
+        XCTAssertGreaterThan(rms, 0.01)
+    }
+
+    func testNewEffectsAutoRegister() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        let types = Set(engine.registeredTypes)
+        XCTAssertTrue(types.contains("compressor"))
+        XCTAssertTrue(types.contains("eq"))
+        XCTAssertTrue(types.contains("chorus"))
+        XCTAssertTrue(types.contains("distortion"))
+        XCTAssertTrue(types.contains("filter"))
+    }
+
+    func testCompressorPassesAudio() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let comp = engine.addNode(typeId: "compressor")
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: comp, port: 0)
+        engine.connect(synth, port: 1, to: comp, port: 1)
+        engine.setOutputNode(comp)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 0.8)
+        engine.setParameter(synth, additive: .attack, value: 0.001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+        _ = engine.sendNoteOn(synth, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        var sumSquares: Double = 0
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+            for i in 0 ..< frames * 2 {
+                sumSquares += Double(buffer[i] * buffer[i])
+            }
+        }
+        XCTAssertGreaterThan((sumSquares / Double(8 * frames * 2)).squareRoot(), 0.005)
     }
 
     func testSubtractiveSynthAutoRegisters() throws {
@@ -413,5 +489,116 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertTrue(engine.compile())
         XCTAssertTrue(engine.removeNode(sine))
         XCTAssertFalse(engine.compile()) // ya no hay output node
+    }
+
+    func testMixerChannelPeakReportsAudioLevel() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let mixer = engine.addNode(.mixer)
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: mixer, port: 0)
+        engine.connect(synth, port: 1, to: mixer, port: 1)
+        engine.setOutputNode(mixer)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 1.0)
+        engine.setParameter(synth, additive: .attack, value: 0.0001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+        engine.setMixerParameter(mixer, channel: 0, kind: .gain, value: 1.0)
+        _ = engine.sendNoteOn(synth, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+        }
+        let peakL = engine.mixerChannelPeak(mixer, channel: 0, isLeft: true)
+        let peakR = engine.mixerChannelPeak(mixer, channel: 0, isLeft: false)
+        XCTAssertGreaterThan(peakL, 0.05)
+        XCTAssertGreaterThan(peakR, 0.05)
+
+        // Tras mute + más renders, el peak decae.
+        engine.setMixerParameter(mixer, channel: 0, kind: .mute, value: 1)
+        _ = engine.sendNoteOff(synth, midi: 60)
+        for _ in 0 ..< 200 {
+            engine.render(into: buffer, frames: frames)
+        }
+        XCTAssertLessThan(engine.mixerChannelPeak(mixer, channel: 0, isLeft: true), 0.001)
+    }
+
+    func testFrameOffsetDelaysNoteWithinBlock() throws {
+        // M5.5: un noteOn con frameOffset > 0 no debe producir audio antes de ese
+        // frame. Renderizamos un bloque grande con frameOffset = mitad del bloque
+        // y comparamos energía en la primera mitad vs segunda mitad.
+        let bigFrames = 1024
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: bigFrames)
+        guard let synth = engine.addNode(.additiveSynth) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.setOutputNode(synth)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(synth, additive: .volume, value: 1.0)
+        engine.setParameter(synth, additive: .attack, value: 0.0001)
+        engine.setParameter(synth, additive: .sustain, value: 1.0)
+
+        // Note on en la mitad del bloque (sample 512).
+        let offset: UInt32 = 512
+        _ = engine.sendNoteOn(synth, midi: 60, velocity: 1.0, frameOffset: offset)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: bigFrames * 2)
+        defer { buffer.deallocate() }
+        engine.render(into: buffer, frames: bigFrames)
+
+        var rmsFirstHalf: Double = 0
+        var rmsSecondHalf: Double = 0
+        for i in 0 ..< bigFrames {
+            let l = Double(buffer[i * 2])
+            let r = Double(buffer[i * 2 + 1])
+            let sq = l * l + r * r
+            if i < Int(offset) {
+                rmsFirstHalf += sq
+            } else {
+                rmsSecondHalf += sq
+            }
+        }
+        rmsFirstHalf = (rmsFirstHalf / Double(2 * Int(offset))).squareRoot()
+        rmsSecondHalf = (rmsSecondHalf / Double(2 * (bigFrames - Int(offset)))).squareRoot()
+        XCTAssertLessThan(rmsFirstHalf, 0.001)        // silencio antes del offset
+        XCTAssertGreaterThan(rmsSecondHalf, 0.05)     // audio después del offset
+    }
+
+    func testNoteEventToUnknownNodeIsDropped() throws {
+        // M2.5: dispatch indexado por nodeId. Un evento a un nodeId que no
+        // existe en el plan se descarta silenciosamente, sin afectar al render
+        // ni a otros nodos.
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let pass = engine.addNode(.passthrough)
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: pass, port: 0)
+        engine.connect(synth, port: 1, to: pass, port: 1)
+        engine.setOutputNode(pass)
+        XCTAssertTrue(engine.compile())
+
+        // Nota dirigida a un nodeId inexistente: el synth real no debe recibirla.
+        let unknownId: ChipsNodeId = 99_999
+        _ = engine.sendNoteOn(unknownId, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+        }
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        XCTAssertLessThan((sumSquares / Double(frames * 2)).squareRoot(), 0.001)
     }
 }
