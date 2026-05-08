@@ -304,9 +304,48 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertTrue(types.contains("passthrough"))
         XCTAssertTrue(types.contains("test_source"))
         XCTAssertTrue(types.contains("additive_synth"))
+        XCTAssertTrue(types.contains("subtractive_synth"))
         XCTAssertTrue(types.contains("mixer"))
         XCTAssertTrue(types.contains("delay"))
         XCTAssertTrue(types.contains("reverb"))
+    }
+
+    func testSubtractiveSynthAutoRegisters() throws {
+        // Plug-and-play: añadir un synth sin tocar coordinator/snapshot/UI core.
+        // Aquí solo verificamos que el módulo se auto-registra y expone los
+        // parámetros que la UI genérica espera.
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(typeId: "subtractive_synth") else {
+            XCTFail("addNode subtractive_synth")
+            return
+        }
+        XCTAssertEqual(engine.nodeTypeId(synth), "subtractive_synth")
+        XCTAssertEqual(engine.parameterCount(of: synth), 7)
+        let names = engine.parameterSpecs(of: synth).map(\.name)
+        XCTAssertEqual(Set(names), ["volume", "cutoff", "resonance", "attack", "decay", "sustain", "release"])
+    }
+
+    func testSubtractiveSynthRendersAfterNoteOn() throws {
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(typeId: "subtractive_synth") else {
+            XCTFail("addNode")
+            return
+        }
+        engine.setOutputNode(synth)
+        XCTAssertTrue(engine.compile())
+        XCTAssertTrue(engine.sendNoteOn(synth, midi: 60, velocity: 1.0))
+
+        let totalFrames = frames * 4
+        var buffer = [Float](repeating: 0, count: totalFrames * 2)
+        buffer.withUnsafeMutableBufferPointer { ptr in
+            engine.render(into: ptr.baseAddress!, frames: totalFrames)
+        }
+        var sumSquares: Double = 0
+        for i in 0 ..< (totalFrames * 2) {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        let rms = (sumSquares / Double(totalFrames * 2)).squareRoot()
+        XCTAssertGreaterThan(rms, 0.01, "RMS=\(rms) — el synth no produjo audio audible tras note on")
     }
 
     func testNodeTypeIdMatchesRegistered() throws {

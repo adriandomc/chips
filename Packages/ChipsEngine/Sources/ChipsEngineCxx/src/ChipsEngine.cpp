@@ -11,6 +11,7 @@
 #include "PassthroughModule.hpp"
 #include "ReverbModule.hpp"
 #include "SineGenerator.hpp"
+#include "SubtractiveSynth.hpp"
 #include "TestSourceModule.hpp"
 
 #include <cstring>
@@ -31,6 +32,7 @@ void touchAllModules() {
     chips::PassthroughModule::forceLink();
     chips::TestSourceModule::forceLink();
     chips::AdditiveSynth::forceLink();
+    chips::SubtractiveSynth::forceLink();
     chips::MixerModule::forceLink();
     chips::DelayModule::forceLink();
     chips::ReverbModule::forceLink();
