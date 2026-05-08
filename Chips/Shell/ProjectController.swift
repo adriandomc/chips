@@ -1,6 +1,7 @@
 import ChipsAudioHost
 import ChipsCore
 import ChipsEngine
+import ChipsMIDI
 import Foundation
 
 enum ProjectControllerError: Error {
@@ -26,6 +27,7 @@ final class ProjectController: SequencerEngineDelegate {
     let sequencer = SequencerEngine()
     private(set) var graph: ProjectGraph
     private var nodeIds: [NodeRef: ChipsNodeId] = [:]
+    private var midiInput: ChipsMIDIInput?
 
     var onTimecodeChange: ((String) -> Void)?
     var onTickChange: ((Int64) -> Void)?
@@ -37,6 +39,48 @@ final class ProjectController: SequencerEngineDelegate {
         sequencer.delegate = self
         sequencer.setTracks(graph.tracks)
         sequencer.setTempo(graph.tempoBpm)
+        startMIDIInput()
+    }
+
+    /// Crea una virtual MIDI destination "Chips" y rutea note on/off al
+    /// instrumento principal del proyecto (synthRef si existe; si no, al
+    /// primer nodo con `numAudioInputs == 0` que admita notas). CC se
+    /// reserva para futuras asignaciones; por ahora se ignora.
+    private func startMIDIInput() {
+        do {
+            let input = try ChipsMIDIInput(name: "Chips")
+            input.onNoteOn = { [weak self] _, midi, velocity in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.routeMidiNoteOn(midi: midi, velocity: velocity)
+                }
+            }
+            input.onNoteOff = { [weak self] _, midi in
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    self.routeMidiNoteOff(midi: midi)
+                }
+            }
+            midiInput = input
+        } catch {
+            // CoreMIDI puede fallar en simulator viejo; no es crítico.
+            midiInput = nil
+        }
+    }
+
+    private func routeMidiNoteOn(midi: Int, velocity: Float) {
+        guard let ref = synthRef ?? firstInstrumentRef(), let chipsId = nodeIds[ref] else { return }
+        host.engine.sendNoteOn(chipsId, midi: midi, velocity: velocity)
+    }
+
+    private func routeMidiNoteOff(midi: Int) {
+        guard let ref = synthRef ?? firstInstrumentRef(), let chipsId = nodeIds[ref] else { return }
+        host.engine.sendNoteOff(chipsId, midi: midi)
+    }
+
+    private func firstInstrumentRef() -> NodeRef? {
+        // Heurística: el primer nodo cuyo typeId termina en _synth (synth puro).
+        graph.nodes.first { $0.typeId.contains("synth") }?.id
     }
 
     /// Default graph: la cadena heredada synth → mixer → delay → reverb. Útil
