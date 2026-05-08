@@ -2,14 +2,14 @@ import ChipsAudioHost
 import ChipsUIKit
 import UIKit
 
-/// HUD overlay diminuto que muestra DSP load, sample rate y buffer size.
-/// Solo se compila en builds DEBUG — en Release no existe la clase.
-///
-/// Polling: lee `engine.dspLoad` cada 200 ms (5 Hz suficiente para sentir
-/// picos sin gastar CPU). El cálculo es lock-free, devuelve un float que
-/// el audio thread escribió.
-///
-/// Tap → toggles ocultar/mostrar (por si molesta durante una grabación).
+// HUD overlay diminuto que muestra DSP load, sample rate y buffer size.
+// Solo se compila en builds DEBUG — en Release no existe la clase.
+//
+// Polling: lee `engine.dspLoad` cada 200 ms (5 Hz suficiente para sentir
+// picos sin gastar CPU). El cálculo es lock-free, devuelve un float que
+// el audio thread escribió.
+//
+// Tap → toggles ocultar/mostrar (por si molesta durante una grabación).
 #if DEBUG
 @MainActor
 final class DebugHUDView: UIView {
