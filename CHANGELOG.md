@@ -5,6 +5,48 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-C — i18n (en + es) con `Localizable.xcstrings`
+- `Chips/Resources/Localizable.xcstrings`: catálogo único con ~70 claves
+  cubriendo todas las superficies user-facing: secciones (sequencer,
+  mixer, synth, grid, settings, help), botones de Settings (NEW, SAVE,
+  LOAD, etc.), labels de campos (Project Name, Tempo, BPM, …), alertas
+  (save success/error, load, export, stems), About completo (Privacy
+  Policy, Terms, Licenses, Restore Purchases + hint, version format,
+  copyright), Onboarding (4 páginas + botones SKIP/NEXT/GET STARTED),
+  Mixer (Track N, Pan, EQ, Sends, M/S), generic panel empty state.
+  Cada clave tiene `extractionState: manual` (no la sobreescribe Xcode
+  al extraer) y traducciones `en` + `es`.
+- `project.yml`: añade `knownRegions: [en, es, Base]` para que XcodeGen
+  declare los regions en el .xcodeproj generado.
+- Reemplaza strings hardcoded por `String(localized:)` en:
+  - `Chips/AppSection.swift` (titles de cada sección).
+  - `Chips/Sections/SettingsSectionViewController.swift` (todos los
+    botones, fields, alertas — incluido manejo de format strings con
+    `String(format:_:)` para los placeholders).
+  - `Chips/Sections/AboutViewController.swift` (todo el texto user-facing,
+    versión formateada con `about.version_format`).
+  - `Chips/Sections/OnboardingPage.swift` (4 títulos + 4 subtítulos
+    desde el catálogo).
+  - `Chips/Sections/OnboardingViewController.swift` (botones SKIP, NEXT,
+    GET STARTED).
+  - `Chips/Sections/MixerSectionViewController.swift` (Track N,
+    Pan, EQ, Sends, M, S).
+  - `Chips/Sections/GenericInstrumentPanelViewController.swift` (empty).
+  - `Chips/Sections/HelpSectionViewController.swift` (subtítulo).
+  - `Chips/Sections/SequencerSectionViewController.swift` (Track N).
+- Tests:
+  - `testLocalizableCatalogHasEnAndEs`: parsea el `.xcstrings` y verifica
+    que las claves críticas existen en en + es. Si Xcode no expone el
+    fuente como recurso, el test cede al de runtime.
+  - `testLocalizedKeysResolveAtRuntime`: `String(localized:)` devuelve
+    un valor distinto de la clave para cuatro claves canarias.
+
+Pendiente: localizar SynthesizerSectionViewController (knobs internos)
+y GridSectionViewController. Lo dejo para una PR posterior porque su
+copy depende de cambios visuales que aún no he tocado.
+
+Stack: M11-C basada sobre M11-B.
+
 ### M11-B — Onboarding mínimo (4 páginas) al primer launch
 - `Chips/Sections/OnboardingPage.swift`: enum con 4 páginas (Welcome,
   Sequence, Sound design, Ship it).

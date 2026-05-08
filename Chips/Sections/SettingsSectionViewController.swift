@@ -40,18 +40,18 @@ final class SettingsSectionViewController: UIViewController {
     }
 
     private func configureButtons() {
-        newButton.title = "NEW"
-        saveButton.title = "SAVE"
-        loadButton.title = "LOAD"
-        tapTempoButton.title = "TAP TEMPO"
-        formatButton.title = "WAV"
-        mainTrackButton.title = "MASTER TRACK"
-        stemsButton.title = "STEMS"
-        aboutButton.title = "ABOUT"
+        newButton.title = String(localized: "settings.button.new")
+        saveButton.title = String(localized: "settings.button.save")
+        loadButton.title = String(localized: "settings.button.load")
+        tapTempoButton.title = String(localized: "settings.button.tap_tempo")
+        formatButton.title = String(localized: "settings.button.wav")
+        mainTrackButton.title = String(localized: "settings.button.master_track")
+        stemsButton.title = String(localized: "settings.button.stems")
+        aboutButton.title = String(localized: "settings.button.about")
     }
 
     private func configureFields() {
-        projectName.placeholder = "Untitled"
+        projectName.placeholder = String(localized: "settings.placeholder.untitled")
         author.placeholder = "—"
         tempoField.alignment = .center
     }
@@ -67,8 +67,8 @@ final class SettingsSectionViewController: UIViewController {
 
     private func layoutContent() {
         let topRow = makeRow(buttons: [newButton, saveButton, loadButton])
-        let nameRow = makeFieldRow(label: "Project Name", control: projectName)
-        let authorRow = makeFieldRow(label: "Author", control: author)
+        let nameRow = makeFieldRow(label: String(localized: "settings.label.project_name"), control: projectName)
+        let authorRow = makeFieldRow(label: String(localized: "settings.label.author"), control: author)
         let tempoRow = makeTempoRow()
         let separator = makeSeparator()
         let exportTitle = makeExportTitle()
@@ -122,8 +122,8 @@ final class SettingsSectionViewController: UIViewController {
     }
 
     private func makeTempoRow() -> UIStackView {
-        let tempoLabel = makeFieldLabel("Tempo")
-        let bpmLabel = makeFieldLabel("BPM")
+        let tempoLabel = makeFieldLabel(String(localized: "settings.label.tempo"))
+        let bpmLabel = makeFieldLabel(String(localized: "settings.label.bpm"))
         let row = UIStackView(arrangedSubviews: [tempoLabel, tempoField, bpmLabel, tapTempoButton])
         row.axis = .horizontal
         row.spacing = 8
@@ -132,7 +132,7 @@ final class SettingsSectionViewController: UIViewController {
     }
 
     private func makeFormatRow() -> UIStackView {
-        let formatLabel = makeFieldLabel("File Format")
+        let formatLabel = makeFieldLabel(String(localized: "settings.label.file_format"))
         let row = UIStackView(arrangedSubviews: [formatLabel, formatButton])
         row.axis = .horizontal
         row.spacing = 8
@@ -150,7 +150,7 @@ final class SettingsSectionViewController: UIViewController {
 
     private func makeExportTitle() -> UILabel {
         let label = UILabel()
-        label.text = "EXPORT"
+        label.text = String(localized: "settings.label.export")
         label.font = ChipsTheme.Font.mono(size: 12, weight: .semibold)
         label.textColor = ChipsTheme.textPrimary
         return label
@@ -172,9 +172,12 @@ final class SettingsSectionViewController: UIViewController {
             projectName.text = ""
             author.text = ""
             tempoField.text = "120"
-            showAlert(title: "Nuevo proyecto", message: "Se aplicaron los defaults.")
+            showAlert(
+                title: String(localized: "settings.alert.new_project_title"),
+                message: String(localized: "settings.alert.new_project_message")
+            )
         } catch {
-            showAlert(title: "Error", message: "\(error)")
+            showAlert(title: String(localized: "common.error"), message: "\(error)")
         }
     }
 
@@ -185,9 +188,9 @@ final class SettingsSectionViewController: UIViewController {
             let data = try ProjectStorage.encode(graph)
             let url = documentsDirectory().appendingPathComponent("\(name).\(ProjectStorage.fileExtension)")
             try data.write(to: url, options: .atomic)
-            showAlert(title: "Proyecto guardado", message: url.lastPathComponent)
+            showAlert(title: String(localized: "settings.alert.save_success"), message: url.lastPathComponent)
         } catch {
-            showAlert(title: "Error al guardar", message: "\(error)")
+            showAlert(title: String(localized: "settings.alert.save_error"), message: "\(error)")
         }
     }
 
@@ -198,16 +201,24 @@ final class SettingsSectionViewController: UIViewController {
         )) ?? []
         let chipsFiles = urls.filter { $0.pathExtension == ProjectStorage.fileExtension }
         guard !chipsFiles.isEmpty else {
-            showAlert(title: "Sin proyectos", message: "No hay archivos .\(ProjectStorage.fileExtension) guardados.")
+            let format = String(localized: "settings.alert.no_projects_message_format")
+            showAlert(
+                title: String(localized: "settings.alert.no_projects_title"),
+                message: String(format: format, ProjectStorage.fileExtension)
+            )
             return
         }
-        let alert = UIAlertController(title: "Cargar proyecto", message: nil, preferredStyle: .actionSheet)
+        let alert = UIAlertController(
+            title: String(localized: "settings.alert.load_project"),
+            message: nil,
+            preferredStyle: .actionSheet
+        )
         for url in chipsFiles {
             alert.addAction(UIAlertAction(title: url.lastPathComponent, style: .default) { [weak self] _ in
                 self?.loadProject(from: url)
             })
         }
-        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        alert.addAction(UIAlertAction(title: String(localized: "common.cancel"), style: .cancel))
         present(alert, animated: true)
     }
 
@@ -220,7 +231,7 @@ final class SettingsSectionViewController: UIViewController {
             author.text = graph.author
             tempoField.text = String(Int(graph.tempoBpm))
         } catch {
-            showAlert(title: "Error al cargar", message: "\(error)")
+            showAlert(title: String(localized: "settings.alert.load_error"), message: "\(error)")
         }
     }
 
@@ -229,14 +240,21 @@ final class SettingsSectionViewController: UIViewController {
         let url = documentsDirectory().appendingPathComponent("\(name).wav")
         do {
             try controller.exportWav(to: url, seconds: 8)
-            showAlert(title: "Main track exportado", message: "\(url.lastPathComponent) (8 s, 16-bit)")
+            let format = String(localized: "settings.alert.export_main_message_format")
+            showAlert(
+                title: String(localized: "settings.alert.export_main_title"),
+                message: String(format: format, url.lastPathComponent)
+            )
         } catch {
-            showAlert(title: "Error al exportar", message: "\(error)")
+            showAlert(title: String(localized: "settings.alert.export_error"), message: "\(error)")
         }
     }
 
     @objc private func stemsTapped() {
-        showAlert(title: "Stems", message: "Pendiente (export por canal del mixer).")
+        showAlert(
+            title: String(localized: "settings.alert.stems_title"),
+            message: String(localized: "settings.alert.stems_message")
+        )
     }
 
     @objc private func aboutTapped() {
@@ -252,7 +270,7 @@ final class SettingsSectionViewController: UIViewController {
 
     private func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(UIAlertAction(title: String(localized: "common.ok"), style: .default))
         present(alert, animated: true)
     }
 }

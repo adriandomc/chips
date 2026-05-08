@@ -45,12 +45,12 @@ final class OnboardingViewController: UIViewController {
     }
 
     private func configureButtons() {
-        skipButton.title = "SKIP"
+        skipButton.title = String(localized: "onboarding.button.skip")
         skipButton.titleFont = ChipsTheme.Font.mono(size: 11, weight: .semibold)
         skipButton.contentInsets = .init(top: 8, left: 14, bottom: 8, right: 14)
         skipButton.addTarget(self, action: #selector(skipTapped), for: .touchUpInside)
 
-        nextButton.title = "NEXT"
+        nextButton.title = String(localized: "onboarding.button.next")
         nextButton.titleFont = ChipsTheme.Font.mono(size: 13, weight: .semibold)
         nextButton.contentInsets = .init(top: 12, left: 24, bottom: 12, right: 24)
         nextButton.addTarget(self, action: #selector(nextTapped), for: .touchUpInside)
@@ -141,7 +141,9 @@ final class OnboardingViewController: UIViewController {
         let updateLabels = {
             self.titleLabel.text = page.title
             self.subtitleLabel.text = page.subtitle
-            self.nextButton.title = (index == self.pages.count - 1) ? "GET STARTED" : "NEXT"
+            self.nextButton.title = (index == self.pages.count - 1)
+                ? String(localized: "onboarding.button.get_started")
+                : String(localized: "onboarding.button.next")
         }
         updateDots()
 
