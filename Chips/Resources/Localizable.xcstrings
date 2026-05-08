@@ -375,8 +375,22 @@
     "settings.alert.stems_message" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Pending (per-channel mixer export)." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Pendiente (export por canal del mixer)." } }
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exported per-track stems." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Exportadas las stems por pista." } }
+      }
+    },
+    "settings.alert.stems_empty_message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No tracks to export." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "No hay pistas que exportar." } }
+      }
+    },
+    "settings.alert.stems_done_message_format" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exported %d stem(s) to Documents." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Exportadas %d stem(s) a Documentos." } }
       }
     },
     "settings.alert.stems_title" : {
