@@ -5,6 +5,20 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M11-B — Onboarding mínimo (4 páginas) al primer launch
+- `Chips/Sections/OnboardingPage.swift`: enum con 4 páginas (Welcome,
+  Sequence, Sound design, Ship it).
+- `Chips/Sections/OnboardingIconView.swift`: glifo geométrico por
+  página dibujado vía CGContext.
+- `Chips/Sections/OnboardingViewController.swift`: host @MainActor con
+  cross-fade, dots de página, botones SKIP / NEXT / GET STARTED.
+- `Chips/Shell/OnboardingState.swift`: gate persistido en UserDefaults,
+  versionado por entero.
+- `SceneDelegate`: gate antes del AppShell, cross-fade al completar.
+- `PrivacyInfo.xcprivacy`: añade UserDefaults reason CA92.1.
+- Tests: round-trip estado, contenido de páginas, NEXT × 4 completa,
+  SKIP completa, manifesto declara reason.
+
 ### M11-H — Synth knob units para VoiceOver
 - `SynthesizerSectionViewController`: cada knob recibe un
   `accessibilityValueFormatter` apropiado:
