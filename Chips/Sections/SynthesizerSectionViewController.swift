@@ -101,32 +101,50 @@ final class SynthesizerSectionViewController: UIViewController {
         volumeKnob.minValue = 0
         volumeKnob.maxValue = 1
         volumeKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "volume") ?? 0.5
+        volumeKnob.accessibilityValueFormatter = Self.percentFormatter
         volumeKnob.addTarget(self, action: #selector(volumeChanged), for: .valueChanged)
 
         attackKnob.minValue = 0.001
         attackKnob.maxValue = 2.0
         attackKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "attack") ?? 0.01
+        attackKnob.accessibilityValueFormatter = Self.timeFormatter
         attackKnob.addTarget(self, action: #selector(attackChanged), for: .valueChanged)
 
         decayKnob.minValue = 0.001
         decayKnob.maxValue = 2.0
         decayKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "decay") ?? 0.15
+        decayKnob.accessibilityValueFormatter = Self.timeFormatter
         decayKnob.addTarget(self, action: #selector(decayChanged), for: .valueChanged)
 
         sustainKnob.minValue = 0
         sustainKnob.maxValue = 1
         sustainKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "sustain") ?? 0.7
+        sustainKnob.accessibilityValueFormatter = Self.percentFormatter
         sustainKnob.addTarget(self, action: #selector(sustainChanged), for: .valueChanged)
 
         releaseKnob.minValue = 0.001
         releaseKnob.maxValue = 4.0
         releaseKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "release") ?? 0.4
+        releaseKnob.accessibilityValueFormatter = Self.timeFormatter
         releaseKnob.addTarget(self, action: #selector(releaseChanged), for: .valueChanged)
 
         tiltKnob.minValue = 0
         tiltKnob.maxValue = 1
         tiltKnob.value = controller.parameter(of: synthRef ?? UUID(), name: "tilt") ?? 0.5
+        tiltKnob.accessibilityValueFormatter = Self.percentFormatter
         tiltKnob.addTarget(self, action: #selector(tiltChanged), for: .valueChanged)
+    }
+
+    /// Tiempo en ms si <1 s, en s con un decimal si >=1 s. VoiceOver-friendly.
+    private static let timeFormatter: (Float) -> String = { value in
+        if value < 1.0 {
+            return String(format: "%.0f ms", value * 1000)
+        }
+        return String(format: "%.1f s", value)
+    }
+
+    private static let percentFormatter: (Float) -> String = { value in
+        String(format: "%.0f%%", value * 100)
     }
 
     private func makeKnobsRow(_ items: [(String, ChipsKnob)]) -> UIStackView {
