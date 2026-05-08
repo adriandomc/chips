@@ -13,7 +13,7 @@ final class ChipsAppTests: XCTestCase {
     }
 
     @MainActor
-    func testDefaultGraphSeedsAudibleTrack() throws {
+    func testDefaultGraphSeedsAudibleTrack() {
         // El default graph trae un track demo con 8 notas (escala C mayor)
         // ruteado al synth. Así al primer launch el usuario puede pulsar Play
         // y oír algo sin tener que dibujar notas.
