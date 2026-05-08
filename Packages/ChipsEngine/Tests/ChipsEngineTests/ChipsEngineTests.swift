@@ -414,4 +414,36 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertTrue(engine.removeNode(sine))
         XCTAssertFalse(engine.compile()) // ya no hay output node
     }
+
+    func testNoteEventToUnknownNodeIsDropped() throws {
+        // M2.5: dispatch indexado por nodeId. Un evento a un nodeId que no
+        // existe en el plan se descarta silenciosamente, sin afectar al render
+        // ni a otros nodos.
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let synth = engine.addNode(.additiveSynth),
+              let pass = engine.addNode(.passthrough)
+        else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(synth, port: 0, to: pass, port: 0)
+        engine.connect(synth, port: 1, to: pass, port: 1)
+        engine.setOutputNode(pass)
+        XCTAssertTrue(engine.compile())
+
+        // Nota dirigida a un nodeId inexistente: el synth real no debe recibirla.
+        let unknownId: ChipsNodeId = 99_999
+        _ = engine.sendNoteOn(unknownId, midi: 60, velocity: 1.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        for _ in 0 ..< 8 {
+            engine.render(into: buffer, frames: frames)
+        }
+        var sumSquares: Double = 0
+        for i in 0 ..< frames * 2 {
+            sumSquares += Double(buffer[i] * buffer[i])
+        }
+        XCTAssertLessThan((sumSquares / Double(frames * 2)).squareRoot(), 0.001)
+    }
 }

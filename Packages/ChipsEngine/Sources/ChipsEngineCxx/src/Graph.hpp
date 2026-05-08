@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cstdint>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace chips {
@@ -84,6 +85,7 @@ private:
     };
 
     struct PlannedNode {
+        NodeId id;                         // identidad estable, para dispatch indexado
         IModule* module;
         std::vector<const float*> inputs;  // pointers a buffers del pool (o nullptr para silencio)
         std::vector<float*> outputs;       // pointers a buffers del pool
@@ -94,6 +96,7 @@ private:
     struct Plan {
         BufferPool bufferPool;  // pool propio del plan; evita UAF al recompilar
         std::vector<PlannedNode> nodes;
+        std::unordered_map<NodeId, int> nodeIndex;  // NodeId → index en `nodes`
         const float* outputL = nullptr;  // buffer del pool que será L del engine
         const float* outputR = nullptr;
     };

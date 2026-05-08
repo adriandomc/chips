@@ -172,6 +172,7 @@ bool Graph::compile() {
 
     // 3. Construir el Plan en orden topológico.
     plan->nodes.reserve(sortedIds.size());
+    plan->nodeIndex.reserve(sortedIds.size());
     for (NodeId id : sortedIds) {
         Node* node = findNode(id);
         if (node == nullptr) {
@@ -180,6 +181,7 @@ bool Graph::compile() {
         const int numIn = node->module->numAudioInputs();
         const int numOut = node->module->numAudioOutputs();
         PlannedNode pn;
+        pn.id = id;
         pn.module = node->module.get();
         pn.numInputs = numIn;
         pn.numOutputs = numOut;
@@ -198,6 +200,7 @@ bool Graph::compile() {
             }
             pn.inputs[static_cast<size_t>(p)] = src;
         }
+        plan->nodeIndex[id] = static_cast<int>(plan->nodes.size());
         plan->nodes.push_back(std::move(pn));
     }
 
@@ -233,23 +236,27 @@ void Graph::render(float* interleavedStereoOut, int frames) {
         return;
     }
 
-    // Drain de eventos. M2/M4 broadcast: cada módulo recibe todos los eventos
-    // y filtra por paramId/midi. M2.5 introducirá dispatch indexado por nodeId.
+    // Drain de eventos: dispatch indexado por nodeId via plan->nodeIndex.
+    // Eventos para nodos no presentes en el plan actual se descartan silenciosamente
+    // (puede ocurrir si el plan se recompiló mientras el evento estaba en cola).
     {
         ParameterEvent ev;
         while (paramQueue_.pop(ev)) {
-            for (auto& pn : plan->nodes) {
-                switch (ev.kind) {
-                case ParameterEvent::Kind::Param:
-                    pn.module->handleParameterChange(ev.paramOrMidi, ev.value);
-                    break;
-                case ParameterEvent::Kind::NoteOn:
-                    pn.module->handleNoteOn(static_cast<int>(ev.paramOrMidi), ev.value);
-                    break;
-                case ParameterEvent::Kind::NoteOff:
-                    pn.module->handleNoteOff(static_cast<int>(ev.paramOrMidi));
-                    break;
-                }
+            auto it = plan->nodeIndex.find(ev.nodeId);
+            if (it == plan->nodeIndex.end()) {
+                continue;
+            }
+            IModule* module = plan->nodes[static_cast<size_t>(it->second)].module;
+            switch (ev.kind) {
+            case ParameterEvent::Kind::Param:
+                module->handleParameterChange(ev.paramOrMidi, ev.value);
+                break;
+            case ParameterEvent::Kind::NoteOn:
+                module->handleNoteOn(static_cast<int>(ev.paramOrMidi), ev.value);
+                break;
+            case ParameterEvent::Kind::NoteOff:
+                module->handleNoteOff(static_cast<int>(ev.paramOrMidi));
+                break;
             }
         }
     }
