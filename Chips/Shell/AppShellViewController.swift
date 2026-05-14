@@ -84,6 +84,12 @@ final class AppShellViewController: UIViewController {
         }
         topBar.timecode.text = coordinator.transport.formatted
 
+        // Reflejar isPlaying en el botón Play (selected = "encendido").
+        coordinator.onPlaybackChange = { [weak self] playing in
+            self?.topBar.playButton.isSelected = playing
+        }
+        topBar.playButton.isSelected = coordinator.transport.isPlaying
+
         show(section: .sequencer)
         sidebar.setSelected(.sequencer)
 
@@ -114,11 +120,7 @@ final class AppShellViewController: UIViewController {
     }
 
     private func replaceContent(with newChild: UIViewController) {
-        if let current = currentChild {
-            current.willMove(toParent: nil)
-            current.view.removeFromSuperview()
-            current.removeFromParent()
-        }
+        let oldChild = currentChild
         addChild(newChild)
         contentContainer.addSubview(newChild.view)
         newChild.view.translatesAutoresizingMaskIntoConstraints = false
@@ -128,7 +130,18 @@ final class AppShellViewController: UIViewController {
             newChild.view.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
             newChild.view.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor),
         ])
-        newChild.didMove(toParent: self)
+        newChild.view.alpha = 0
+        UIView.animate(withDuration: 0.18, delay: 0, options: [.curveEaseOut, .allowUserInteraction], animations: {
+            newChild.view.alpha = 1
+            oldChild?.view.alpha = 0
+        }, completion: { _ in
+            if let oldChild {
+                oldChild.willMove(toParent: nil)
+                oldChild.view.removeFromSuperview()
+                oldChild.removeFromParent()
+            }
+            newChild.didMove(toParent: self)
+        })
         currentChild = newChild
     }
 

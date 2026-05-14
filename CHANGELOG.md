@@ -5,6 +5,33 @@ Versionado: SemVer una vez alcanzada v1.0; antes, solo se registran milestones.
 
 ## [Unreleased]
 
+### M12 — Comercial polish: limiter, transport state, cross-fade, autosave
+- **MixerModule master limiter**: `tanh` soft-clip aplicado en el master
+  out tras la suma de canales. Ceiling ≈ -0.5 dBFS. Antes, sumar varios
+  canales con gain alto producía clipping duro audible.
+- **Transport state visible**: `ChipsTransportButton` ahora honra
+  `isSelected`. `ProjectController.onPlaybackChange: ((Bool) -> Void)?`
+  notifica al AppShell cuando el sequencer arranca/para — el botón Play
+  se queda "encendido" mientras suena.
+- **Cross-fade entre secciones**: `AppShellViewController.replaceContent`
+  hace un fade-in de 180ms al swap de section. Se siente fluido en vez
+  de saltado.
+- **Autosave**: `Chips/Shell/AutoSave.swift`. Al ir a background,
+  `SceneDelegate.sceneDidEnterBackground` graba el grafo actual a
+  `Documents/Autosave.chips`. Al siguiente launch, `SceneDelegate.scene`
+  carga el autosave si existe (fallback a `defaultGraph()`). El usuario
+  no pierde cambios entre sesiones — comportamiento estándar de DAWs
+  comerciales.
+- Tests:
+  - Engine: `testMixerLimiterPreventsClipping` — peak ≤ 0.95 con gain 2.0.
+  - App: `testAutoSaveRoundTripsGraph`, `testAutoSaveLoadReturnsNilWhenEmpty`.
+
+### fix: Info.plist (UIApplicationSceneManifest)
+Restaurado `UIApplicationSceneManifest`, `UIBackgroundModes`,
+`UILaunchScreen` que un edit previo desde Xcode (Signing & Capabilities)
+había eliminado. Sin esos keys, iOS no instancia el SceneDelegate y la
+app arrancaba con pantalla negra en device.
+
 ### M11-F — Default seed pattern (audible al primer Play)
 - `ProjectController.defaultGraph()`: tras migrar v1 → v2, si los tracks
   vienen vacíos, inyecta un track "Lead" ruteado al additive synth con

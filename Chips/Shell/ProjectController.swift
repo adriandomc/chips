@@ -31,6 +31,7 @@ final class ProjectController: SequencerEngineDelegate {
 
     var onTimecodeChange: ((String) -> Void)?
     var onTickChange: ((Int64) -> Void)?
+    var onPlaybackChange: ((Bool) -> Void)?
 
     init(graph: ProjectGraph) throws {
         host = try ChipsAudioHost(sampleRate: 48000, maxFrames: 1024)
@@ -249,15 +250,18 @@ final class ProjectController: SequencerEngineDelegate {
     func play() {
         try? host.start()
         sequencer.play()
+        onPlaybackChange?(true)
     }
 
     func stop() {
         sequencer.stop()
+        onPlaybackChange?(false)
     }
 
     func stopAll() {
         sequencer.stop()
         host.stop()
+        onPlaybackChange?(false)
     }
 
     func setTempo(_ bpm: Float) {

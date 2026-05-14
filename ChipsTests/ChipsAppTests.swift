@@ -264,6 +264,29 @@ final class ChipsAppTests: XCTestCase {
         return json?["strings"] as? [String: Any] ?? [:]
     }
 
+    @MainActor
+    func testAutoSaveRoundTripsGraph() throws {
+        AutoSave.clear()
+        defer { AutoSave.clear() }
+
+        let original = ProjectController.defaultGraph()
+        AutoSave.save(original)
+
+        guard let restored = AutoSave.load() else {
+            XCTFail("AutoSave.load returned nil después de save")
+            return
+        }
+        XCTAssertEqual(restored.nodes.count, original.nodes.count)
+        XCTAssertEqual(restored.tracks.count, original.tracks.count)
+        XCTAssertEqual(restored.tempoBpm, original.tempoBpm)
+    }
+
+    @MainActor
+    func testAutoSaveLoadReturnsNilWhenEmpty() {
+        AutoSave.clear()
+        XCTAssertNil(AutoSave.load())
+    }
+
     private static func privacyManifestAPIs() throws -> [[String: Any]] {
         guard let url = Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy") else {
             throw NSError(

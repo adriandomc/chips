@@ -237,6 +237,36 @@ final class ChipsEngineTests: XCTestCase {
         XCTAssertGreaterThan((sumSquares / Double(frames * 2)).squareRoot(), 0.05)
     }
 
+    func testMixerLimiterPreventsClipping() throws {
+        // Source con amplitud 1.0 + gain 2.0 → 2.0 entrada a tanh = 0.964 × 0.94 ≈ 0.906.
+        // Sin limiter, el output llegaría a 2.0 (clip duro). Verifica que el
+        // master no excede el ceiling [-0.94, 0.94].
+        let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
+        guard let sine = engine.addNode(.sine), let mixer = engine.addNode(.mixer) else {
+            XCTFail("addNode")
+            return
+        }
+        engine.connect(sine, port: 0, to: mixer, port: 0)
+        engine.connect(sine, port: 1, to: mixer, port: 1)
+        engine.setOutputNode(mixer)
+        XCTAssertTrue(engine.compile())
+        engine.setParameter(sine, sine: .frequency, value: 440)
+        engine.setParameter(sine, sine: .amplitude, value: 1.0)
+        engine.setParameter(sine, sine: .enabled, value: 1.0)
+        engine.setMixerParameter(mixer, channel: 0, kind: .gain, value: 2.0)
+
+        let buffer = UnsafeMutablePointer<Float>.allocate(capacity: frames * 2)
+        defer { buffer.deallocate() }
+        engine.render(into: buffer, frames: frames)
+
+        var peak: Float = 0
+        for i in 0 ..< frames * 2 {
+            peak = max(peak, abs(buffer[i]))
+        }
+        XCTAssertLessThanOrEqual(peak, 0.95, "Master output exceeded limiter ceiling: \(peak)")
+        XCTAssertGreaterThan(peak, 0.5, "Limiter aplastó la señal demasiado: \(peak)")
+    }
+
     func testMutedMixerChannelProducesSilence() throws {
         let engine = try ChipsEngine(sampleRate: sampleRate, maxFrames: frames)
         guard let sine = engine.addNode(.sine), let mixer = engine.addNode(.mixer) else {
