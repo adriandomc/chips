@@ -28,7 +28,10 @@ public final class ChipsTransportButton: ChipsControl {
         guard let ctx = UIGraphicsGetCurrentContext() else { return }
         switch kind {
         case .play:
-            let fill = isHighlighted ? ChipsTheme.transportGreen.withAlphaComponent(0.7) : ChipsTheme.transportGreen
+            // isSelected = transport playing → triángulo brillante con halo.
+            let baseGreen = ChipsTheme.transportGreen
+            let fill = isHighlighted ? baseGreen.withAlphaComponent(0.7)
+                : (isSelected ? baseGreen : baseGreen.withAlphaComponent(0.55))
             let stroke = ChipsTheme.transportGreenStroke
             drawPlayTriangle(in: rect, ctx: ctx, fill: fill, stroke: stroke)
         case .stop:
@@ -36,6 +39,10 @@ public final class ChipsTransportButton: ChipsControl {
             let stroke = ChipsTheme.transportRedStroke
             drawStopSquare(in: rect, ctx: ctx, fill: fill, stroke: stroke)
         }
+    }
+
+    override public var isSelected: Bool {
+        didSet { setNeedsDisplay() }
     }
 
     private func drawPlayTriangle(in rect: CGRect, ctx: CGContext, fill: UIColor, stroke: UIColor) {

@@ -151,7 +151,16 @@ void MixerModule::process(const ProcessContext& ctx) {
         channelPeak_[peakIdx + 1].store(std::max(decayedR, blockPeakR), std::memory_order_relaxed);
     }
 
-    // Master peak (post-suma).
+    // Soft-clip limiter en master out: tanh suave aplicado tras la suma para
+    // que sumar varios canales sin headroom no produzca clipping duro. Ceiling
+    // ~ -0.5 dBFS — el output queda dentro de [-0.94, 0.94] aprox.
+    constexpr float kLimitCeiling = 0.94f;
+    for (int i = 0; i < ctx.frames; ++i) {
+        outL[i] = std::tanh(outL[i]) * kLimitCeiling;
+        outR[i] = std::tanh(outR[i]) * kLimitCeiling;
+    }
+
+    // Master peak (post-limiter, así el meter refleja la señal real que sale).
     float masterDecayedL = masterPeakL_.load(std::memory_order_relaxed) * kPeakDecayPerBlock;
     float masterDecayedR = masterPeakR_.load(std::memory_order_relaxed) * kPeakDecayPerBlock;
     float masterBlockL = 0.0f;

@@ -14,7 +14,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         Task { await EntitlementManager.shared.bootstrap() }
         let window = UIWindow(windowScene: windowScene)
         do {
-            let projectController = try ProjectController(graph: ProjectController.defaultGraph())
+            // Restaurar autosave si existe — el usuario no pierde cambios entre sesiones.
+            let initialGraph = AutoSave.load() ?? ProjectController.defaultGraph()
+            let projectController = try ProjectController(graph: initialGraph)
             controller = projectController
             if OnboardingState.hasCompleted {
                 window.rootViewController = AppShellViewController(controller: projectController)
@@ -43,6 +45,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 window.rootViewController = viewController
             }
         )
+    }
+
+    /// Auto-save al ir a background. Estándar de DAWs comerciales: el
+    /// usuario no pierde cambios entre sesiones aunque cierre la app.
+    func sceneDidEnterBackground(_: UIScene) {
+        guard let controller else { return }
+        AutoSave.save(controller.currentGraph())
     }
 }
 
